@@ -1,7 +1,18 @@
+/* 1. CONFIGURACIÓN DE FUENTES */
+
+/* Fuente Regular / Flexible */
 @font-face {
-  font-family: "Google Sans";
-  src: url("/TheHub/fonts/GoogleSans-Regular.ttf") format("truetype");
-  font-weight: normal;
+  font-family: 'Google Sans';
+  src: url('/fonts/google_sans_flex.ttf') format('truetype');
+  font-weight: 400; /* Peso normal */
+  font-style: normal;
+}
+
+/* Fuente Negrita */
+@font-face {
+  font-family: 'Google Sans';
+  src: url('/fonts/google_sans_bold.ttf') format('truetype');
+  font-weight: 700; /* Peso negrita */
   font-style: normal;
 }
 
@@ -802,32 +813,187 @@ body {
 /* =========================================================
 = 10) Login / Registro
 ========================================================= */
+:root {
+  /* TEMA OSCURO / CRISTAL */
+  --glass-bg: rgba(0, 0, 0, 0.25); /* Fondo oscuro transparente */
+  --glass-border: rgba(255, 255, 255, 0.15); /* Borde sutil blanco */
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  
+  /* COLORES DE TEXTO (BLANCOS) */
+  --text-main: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.7); /* Blanco con transparencia */
+  
+  /* INPUTS */
+  --input-bg: rgba(255, 255, 255, 0.1); /* Fondo muy sutil para inputs */
+  --input-border: rgba(255, 255, 255, 0.2);
+  --input-text: #ffffff;
+  --input-placeholder: rgba(255, 255, 255, 0.5);
+  
+  /* TU COLOR PRINCIPAL */
+  --primary-color: #d05ce3; /* Un morado un poco más claro para que brille sobre oscuro */
+  --primary-hover: #e07ff0;
+}
+
+/* Aplicar tu fuente a todo */
+body, button, input, select, textarea {
+  font-family: 'Google Sans', sans-serif;
+}
+
+/* El contenedor principal (Hero) */
 .login-hero {
   min-height: calc(100vh - 160px);
   padding: 4rem 1rem 6rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: url('/TheHub/images/bg/bg.png');
+  background-image: url('/TheHub/images/bg/bg.png'); 
   background-size: cover;
   background-attachment: fixed;
   background-position: center;
 }
+
+/* TARJETA DE CRISTAL OSCURO */
 .form-container {
-  max-width: 450px; margin: 50px auto; padding: 30px; background-color: #ffffffcc;
-  border-radius: 20px; box-shadow: var(--shadow-card); backdrop-filter: blur(10px); margin-bottom: 100px;
+  width: 100%;
+  max-width: 420px;
+  margin: 50px auto;
+  padding: 40px 30px;
+  
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px); /* Blur intenso */
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 28px;
+  
+  color: var(--text-main);
 }
-.form-group { margin-bottom: 20px; }
-.form-label { font-weight: 500; color: var(--color_text-secundary); margin-bottom: 8px; }
+
+.form-container h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-weight: 700; /* Usará google_sans_bold.ttf */
+  color: var(--text-main);
+  letter-spacing: -0.5px;
+}
+
+/* GRUPOS Y LABELS */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 400; /* Regular */
+  color: var(--text-muted); /* Blanco suave */
+  margin-bottom: 8px;
+  margin-left: 4px;
+}
+
+/* INPUTS MEJORADOS PARA MODO OSCURO */
+.form-control {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1rem;
+  
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  
+  color: var(--input-text); /* Texto blanco al escribir */
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+/* Color del placeholder (el texto de ayuda) */
+.form-control::placeholder {
+  color: var(--input-placeholder);
+}
+
+/* Efecto Focus */
+.form-control:focus {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(208, 92, 227, 0.25); /* Halo morado suave */
+}
+
+/* Ajuste para Selects (las opciones suelen ser blancas por defecto del navegador) */
+select.form-control option {
+  background-color: #222; /* Fondo oscuro para el menú desplegable */
+  color: white;
+}
+
+/* BOTÓN */
 .btn-registro {
-  width: 200px; padding: 10px; font-weight: 500; background: var(--main_color-primary); color: white;
-  border-radius: 15px; border: 2px solid transparent; cursor: pointer; transition: var(--transition-medium);
-  margin: 0 auto; display: block;
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700; /* Usará Bold */
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  box-shadow: 0 4px 15px rgba(208, 92, 227, 0.4); /* Sombra brillante (Glow) */
+  margin-top: 10px;
 }
-.btn-registro:hover { background: #7d00a0; color: white; }
-.form-container p { margin-top: 1.5rem; color: var(--color_text-tertiary); text-align: center; }
-.form-container a { color: var(--main_color-primary); text-decoration: none; font-weight: 500; }
-.form-container a:hover { text-decoration: underline; }
+
+.btn-registro:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(208, 92, 227, 0.6);
+}
+
+.btn-registro:disabled {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.3);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* TEXTOS EXTRA Y LINKS */
+.auth-hint {
+  margin-top: 1.5rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.auth-hint a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.auth-hint a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* GRID PARA DOBLE COLUMNA */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+@media (max-width: 480px) {
+  .grid-2 { grid-template-columns: 1fr; gap: 0; }
+}
+
+.auth-error {
+  background-color: rgba(255, 80, 80, 0.25);
+  color: #ffcece;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  text-align: center;
+  border: 1px solid rgba(255, 80, 80, 0.4);
+}
 
 /* =========================================================
 = 11) Transiciones de página
