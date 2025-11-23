@@ -79,7 +79,7 @@ export default function OffcanvasCart() {
           ) : items.length ? (
             items.map((item) => {
               const product = item.product ?? {}
-              const image = product.image ?? (Array.isArray(product.images) ? product.images[0] : "")
+              const image = product.image || "";
               return (
                 <div key={item.id} className="offcanvas-cart-item">
                   {image ? <img src={image} alt={product.name ?? "Producto"} /> : null}

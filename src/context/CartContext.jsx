@@ -19,21 +19,29 @@ function sanitizeQuantity(q) {
   const n = Number.parseInt(q, 10);
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
-function toNumber(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
+
+function toNumber(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function pickImagesArray(product) {
-  const raw = (Array.isArray(product?.image_url) && product.image_url)
-           || (Array.isArray(product?.images) && product.images) || [];
+  const raw = (Array.isArray(product?.image_url) && product.image_url) ||
+              (Array.isArray(product?.images) && product.images) || [];
   const images = raw.map(x => (typeof x === "string" ? x : x?.url || x?.path || x?.src || "")).filter(Boolean);
   const image = product?.image || images[0] || "";
   return { images, image };
 }
+
 function normalizeCartItem(item) {
   if (!item) return null;
   const product = item.product ?? {};
   const { images, image } = pickImagesArray(product);
   const quantity = sanitizeQuantity(item.quantity ?? 0);
-  const price = toNumber(product.price) || toNumber(product.price_value) || toNumber(product.priceNumber) || toNumber(item.price);
+  const price = toNumber(product.price) || toNumber(product.price_value) ||
+                toNumber(product.priceNumber) || toNumber(item.price);
   const productId = item.product_id ?? product.id ?? null;
+  
   return {
     id: item.id ?? `${productId ?? "item"}`,
     cartId: item.cart_id ?? null,
@@ -52,16 +60,35 @@ function normalizeCartItem(item) {
     subtotal: price * quantity,
   };
 }
+
 function normalizeCart(cart) {
+  console.log("📦 [DEBUG] DATOS RECIBIDOS EN NORMALIZE:", cart);
+
   if (!cart) return { cartId: null, userId: null, items: [] };
-  const rawItems = (Array.isArray(cart.items) && cart.items) || (Array.isArray(cart.cart_items) && cart.cart_items) || [];
+
+  // AQUÍ AGREGAMOS EL NOMBRE LARGO QUE VIMOS EN TU CONSOLA
+  const rawItems = (Array.isArray(cart.items) && cart.items) || 
+                   (Array.isArray(cart.cart_items) && cart.cart_items) ||
+                   (Array.isArray(cart._cart_item) && cart._cart_item) ||
+                   (Array.isArray(cart._cart_item_of_cart_of_product) && cart._cart_item_of_cart_of_product) || // <--- ¡AQUÍ ESTÁ LA CLAVE!
+                   (Array.isArray(cart.response) && cart.response) || 
+                   [];
+  
+  console.log(`📦 [DEBUG] Items encontrados: ${rawItems.length}`, rawItems);
+
   const items = rawItems.map(ci => normalizeCartItem(ci)).filter(x => x && x.productId);
-  return { cartId: cart.id ?? null, userId: cart.user_id ?? null, items };
+  
+  return { 
+    cartId: cart.id ?? null, 
+    userId: cart.user_id ?? null, 
+    items 
+  };
 }
 
 /* ========================= Provider ========================= */
 export function CartProvider({ children }) {
-  const { status: authStatus } = useAuth(); // checking | authenticated | unauthenticated
+  const { status: authStatus } = useAuth();
+  // checking | authenticated | unauthenticated
 
   const [cartId, setCartId] = useState(() => CartApi.getStoredCartId());
   const [userId, setUserId] = useState(null);
@@ -93,6 +120,7 @@ export function CartProvider({ children }) {
   }, []);
 
   const handleCartError = useCallback((err) => {
+    console.error("⚠️ [CartContext] Error manejado:", err);
     if (err?.response?.status === 404) resetLocalCart();
     setError(err);
   }, [resetLocalCart]);
@@ -114,11 +142,13 @@ export function CartProvider({ children }) {
     setIsLoading(true);
     inflightRefresh.current = (async () => {
       try {
+        console.log("🔄 [DEBUG] refreshCart: Obteniendo carrito ID:", effective);
         const cart = await CartApi.getCart(effective);
+        console.log("🔄 [DEBUG] refreshCart: Respuesta API:", cart);
         if (cart) applyCartState(cart);
         return cart;
       } catch (err) {
-        if (err?.response?.status !== 429) handleCartError(err); // silencia 429
+        if (err?.response?.status !== 429) handleCartError(err);
         return null;
       } finally {
         inflightRefresh.current = null;
@@ -135,13 +165,16 @@ export function CartProvider({ children }) {
     setIsLoading(true);
     inflightEnsure.current = (async () => {
       try {
+        console.log("🛒 [DEBUG] ensureCartId: Solicitando nuevo carrito...");
         const cart = await CartApi.ensureCart();
+        console.log("🛒 [DEBUG] ensureCartId: Recibido:", cart);
         if (cart) {
           applyCartState(cart);
           return cart.id ?? null;
         }
         return null;
       } catch (err) {
+        console.error("🔥 [DEBUG] ensureCartId falló:", err);
         if (err?.response?.status !== 429) handleCartError(err);
         return null;
       } finally {
@@ -158,9 +191,7 @@ export function CartProvider({ children }) {
     bootOnce.current = true;
 
     (async () => {
-      // si Auth está chequeando, espera a que se estabilice (evita ráfagas)
       if (authStatus === "checking") return;
-
       try {
         const existing = CartApi.getStoredCartId();
         if (existing) {
@@ -169,15 +200,12 @@ export function CartProvider({ children }) {
           const id = await ensureCartId();
           if (id) await refreshCart(id);
         }
-      } catch (err) {
-        // ya se manejó en handlers
-      }
+      } catch (err) {}
     })();
   }, [authStatus, ensureCartId, refreshCart]);
 
   /* ---------- cambios de autenticación ---------- */
   useEffect(() => {
-    // Sólo re-bootstrap cuando cambia entre estados estables
     const stable = (s) => s === "authenticated" || s === "unauthenticated";
     if (!stable(authStatus) || authStatus === lastAuthStatus.current) return;
 
@@ -193,21 +221,40 @@ export function CartProvider({ children }) {
   }, [authStatus, ensureCartId, refreshCart, resetLocalCart]);
 
   /* ---------- acciones ---------- */
+  
   const addItem = useCallback(async (productOrId, quantity = 1) => {
     const productId =
       typeof productOrId === "object" && productOrId !== null
         ? (productOrId.id ?? productOrId.product_id ?? productOrId.productId)
         : productOrId;
     const qty = sanitizeQuantity(quantity);
-    if (!productId || qty <= 0) throw new Error("Producto o cantidad inválida");
+
+    console.log("🛒 [DEBUG] addItem iniciado para ID:", productId, "Cantidad:", qty);
+
+    if (!productId || qty <= 0) {
+        console.error("❌ [DEBUG] Datos inválidos en addItem");
+        throw new Error("Producto o cantidad inválida");
+    }
 
     setIsMutating(true);
     try {
-      const id = (await ensureCartId()) ?? cartId;
+      let id = cartId;
+      if (!id) {
+          console.log("🛒 [DEBUG] No hay ID local, llamando a ensureCartId...");
+          id = await ensureCartId();
+      }
+      
       if (!id) throw new Error("No fue posible obtener un carrito activo");
+
+      console.log("🛒 [DEBUG] Enviando addItem a API...");
       await CartApi.addItem({ cart_id: id, product_id: productId, quantity: qty });
+      
+      console.log("🛒 [DEBUG] Refrescando carrito...");
       await refreshCart(id);
+      console.log("✅ [DEBUG] Carrito actualizado correctamente.");
+
     } catch (err) {
+      console.error("🔥 [DEBUG] ERROR EN ADDITEM:", err);
       if (err?.response?.status !== 429) handleCartError(err);
       throw err;
     } finally {
@@ -276,17 +323,44 @@ export function CartProvider({ children }) {
 
   /* ---------- totales / value ---------- */
   const totals = useMemo(() => items.reduce((acc, it) => {
-    acc.totalItems += it.quantity; acc.totalPrice += it.subtotal; return acc;
+    acc.totalItems += it.quantity;
+    acc.totalPrice += it.subtotal;
+    return acc;
   }, { totalItems: 0, totalPrice: 0 }), [items]);
 
   const value = useMemo(() => ({
-    cartId, userId, items,
+    cartId,
+    userId,
+    items,
     totalItems: totals.totalItems,
     totalPrice: totals.totalPrice,
-    isLoading, isMutating, error,
-    refreshCart, addItem, updateQuantity,
-    incrementItem, decrementItem, removeItem, clearCart,
-  }), [addItem, cartId, clearCart, decrementItem, error, incrementItem, isLoading, isMutating, items, refreshCart, removeItem, totals.totalItems, totals.totalPrice, updateQuantity, userId]);
+    isLoading,
+    isMutating,
+    error,
+    refreshCart,
+    addItem,
+    updateQuantity,
+    incrementItem,
+    decrementItem,
+    removeItem,
+    clearCart,
+  }), [
+    addItem,
+    cartId,
+    clearCart,
+    decrementItem,
+    error,
+    incrementItem,
+    isLoading,
+    isMutating,
+    items,
+    refreshCart,
+    removeItem,
+    totals.totalItems,
+    totals.totalPrice,
+    updateQuantity,
+    userId
+  ]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
