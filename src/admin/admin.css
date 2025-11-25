@@ -1,238 +1,429 @@
+/* =========================================
+   1. GLOBAL Y LAYOUT PRINCIPAL
+   ========================================= */
 body {
   font-family: "Google Sans", "Poppins", sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Evita doble scroll en la ventana */
 }
 
-/* =========================
-   Layout principal
-   ========================= */
 .admin-wrapper {
   display: flex;
-  min-height: 100vh;
-  background-image: url('/TheHub/images/bg/bga.png');
+  width: 100vw;
+  height: 100vh; /* Ocupa toda la pantalla */
+  overflow: hidden;
+  
+  /* Tu fondo original */
+  background-image: url('/TheHub/images/bg/bga.png'); 
   background-size: cover;
-  background-attachment: fixed;
   background-position: center;
+  background-attachment: fixed;
+  background-color: #1a1a2e; /* Color de respaldo */
 }
 
-/* =========================
-   Sidebar (glass)
-   ========================= */
+/* =========================================
+   2. SIDEBAR (Estilo Material 3 Expressive)
+   ========================================= */
 .admin-sidebar {
-  width: 260px;
+  width: 280px;
+  height: 100%;
   flex-shrink: 0;
-  padding: 2rem 1.5rem;
-  background-color: rgba(30, 30, 30, 0.40);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 0 20px 20px 0;
-  box-shadow: 0 8px 30px rgba(0,0,0,.25);
+  display: flex;
+  flex-direction: column;
+  
+  /* Degradado Azul a Morado Oscuro */
+  background: linear-gradient(160deg, #1e3a8a 0%, #2e1065 100%);
+  
+  color: #fff;
+  box-shadow: 4px 0 25px rgba(0, 0, 0, 0.3);
+  z-index: 50;
+  
+  /* Borde redondeado solo a la derecha */
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
 }
 
-.admin-sidebar .sidebar-header {
-  margin-bottom: 1.4rem;
+.sidebar-header {
+  padding: 2rem 1.5rem 1rem;
   text-align: center;
 }
 
-.admin-sidebar .sidebar-header a { text-decoration: none; }
-
-.admin-sidebar .sidebar-header img {
-  max-width: 150px;
-  margin-bottom: .5rem;
+.sidebar-header img {
+  max-width: 140px;
+  height: auto;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
 }
 
-/* =========================
-   Sidebar: items y botón "Salir"
-   ========================= */
-.admin-sidebar .nav .nav-item + .nav-item {
-  margin-top: 6px;
+/* Navegación */
+.admin-sidebar nav {
+  flex-grow: 1;
+  padding: 1rem 1.2rem;
+  overflow-y: auto; /* Scroll interno si la pantalla es muy bajita */
 }
 
-.admin-sidebar .nav-link,
-.admin-sidebar .nav-item button.nav-link {
-  padding: .55rem .9rem;
-  margin-bottom: 0;
-  border-radius: 10px;
-  color: #f0f0f0;
-  font-weight: 500;
-  line-height: 1.1;
-  transition: .2s ease;
+.admin-sidebar .nav-item {
+  list-style: none;
+  margin-bottom: 8px;
+}
+
+/* Enlaces (Estado Inactivo) */
+.admin-sidebar .nav-link {
+  display: flex;
+  align-items: center;
   width: 100%;
-  text-align: left;
+  padding: 14px 20px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 16px; /* Bordes muy redondeados */
+  transition: all 0.25s ease;
+  border: none;
+  background: transparent;
 }
 
-.admin-sidebar .nav-link:hover,
-.admin-sidebar .nav-item button.nav-link:hover {
-  background-color: rgba(255,255,255,.10);
+.admin-sidebar .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
   color: #fff;
   transform: translateX(4px);
 }
 
+/* Enlaces (Estado ACTIVO - Tarjeta Blanca) */
 .admin-sidebar .nav-link.active {
-  background-color: var(--main_color-primary, #8A2BE2);
-  color: #fff;
+  background-color: #ffffff;
+  color: #2e1065; /* Texto morado/azul fuerte */
   font-weight: 700;
-  padding: .55rem .9rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-.admin-sidebar .nav-link i,
-.admin-sidebar .nav-item button.nav-link i {
-  width: 18px;
+.admin-sidebar .nav-link i {
+  width: 24px;
   text-align: center;
-  margin-right: 10px;
-  font-size: .95rem;
+  margin-right: 12px;
+  font-size: 1.1rem;
 }
 
-.admin-sidebar .nav-item button.nav-link {
-  background: none;
-  border: 0;
+/* Botón Salir */
+.logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  color: #ff8585; /* Rojo pastel */
+  background: transparent;
+  border: none;
+  font-weight: 600;
+  transition: 0.2s;
   cursor: pointer;
+  border-radius: 12px;
 }
 
-.admin-sidebar .logout-section { margin-top: auto; }
+.logout-btn:hover {
+  color: #ff4d4d;
+  background: rgba(255, 0, 0, 0.1);
+}
 
-/* =========================
-   Contenido principal
-   ========================= */
+/* =========================================
+   3. CONTENIDO PRINCIPAL (Scroll Independiente)
+   ========================================= */
 .admin-content {
   flex-grow: 1;
-  padding: 2.5rem;
-  color: #fff;
+  height: 100%;
+  overflow-y: auto; /* IMPORTANTE: El scroll solo ocurre aquí */
+  overflow-x: hidden;
+  padding: 0;
+  position: relative;
 }
 
-.admin-content h1 {
-  font-weight: 700;
-  text-shadow: 1px 1px 4px rgba(0,0,0,.5);
+/* Helpers para animación y contenedores */
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  padding-bottom: 6rem;
 }
 
-/* =========================
-   Glass kit reutilizable
-   ========================= */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.admin-content h2 {
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* =========================================
+   4. GLASS KIT (Inputs, Selects, Paneles)
+   ========================================= */
+
+/* Panel Glass (Contenedor de filtros) */
 .glass {
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.18);
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  box-shadow: 0 8px 30px rgba(0,0,0,.25);
-  border-radius: 16px;
-}
-
-.glass-header {
-  background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.06));
-  border-bottom: 1px solid rgba(255,255,255,.18);
-  backdrop-filter: blur(10px);
-}
-
-.content-panel {
-  background-color: rgba(30,30,30,.40);
-  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(30, 30, 30, 0.4); /* Semi-transparente */
+  border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 8px 30px rgba(0,0,0,.25);
-}
-
-.admin-pane { padding: 20px; }
-
-/* =========================
-   Inputs y botones glass
-   ========================= */
-.form-select,
-.form-control {
-  background: rgba(255,255,255,.08) !important;
-  color: #fff !important;
-  border: 1px solid rgba(255,255,255,.22) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.form-control::placeholder { color: rgba(255,255,255,.70); }
-
-.btn-glass {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
   color: #fff;
-  border: 1px solid rgba(255,255,255,.35);
-  background: rgba(255,255,255,.10);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: all .2s ease;
 }
+
+/* --- INPUTS Y SELECTS --- */
+.form-control,
+.form-select {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px);
+  padding: 10px 16px;
+  transition: 0.2s;
+}
+
+.form-control:focus, 
+.form-select:focus {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+  color: #fff !important;
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Corrección para las opciones del Select (fondo oscuro) */
+.form-select option {
+  background-color: #222 !important;
+  color: #fff !important;
+}
+
+/* --- BOTONES --- */
+.btn-glass, 
+.btn-outline-light {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: white;
+  backdrop-filter: blur(5px);
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
 .btn-glass:hover {
-  background: rgba(255,255,255,.18);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .btn-danger-glass {
-  color: #ff6b6b;
-  border-color: rgba(255,107,107,.55);
-  background: rgba(255,107,107,.10);
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid rgba(220, 53, 69, 0.4);
+  color: #ff8585;
+  border-radius: 12px;
+  padding: 6px 12px;
+  transition: 0.2s;
 }
-.btn-danger-glass:hover { background: rgba(255,107,107,.18); }
+.btn-danger-glass:hover {
+  background: rgba(220, 53, 69, 0.4);
+  color: #fff;
+}
 
-/* =========================
-   Tabla glass (ProductsAdmin)
-   ========================= */
+/* =========================================
+   5. TABLAS GLASS (Estilo Flotante)
+   ========================================= */
+
+.table-responsive {
+  border-radius: 16px;
+  /* overflow: hidden; Quitamos esto para que el scroll se vea bien */
+}
+
 .table-glass {
   width: 100%;
-  color: #f3f3f3;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: separate; 
+  border-spacing: 0 8px; /* Espacio entre filas */
+  color: #fff;
+  margin-top: -10px;
 }
 
+/* Encabezados */
 .table-glass thead th {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
   font-weight: 600;
-  letter-spacing: .2px;
-  padding: 14px 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
-  border-bottom: 1px solid rgba(255,255,255,.18);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  padding: 15px 20px;
+  border: none;
+  letter-spacing: 1px;
 }
+.table-glass thead th:first-child { border-radius: 10px 0 0 10px; }
+.table-glass thead th:last-child { border-radius: 0 10px 10px 0; }
 
+/* Filas (Transparencia corregida) */
 .table-glass tbody tr {
-  transition: background .25s ease, transform .12s ease;
+  background: rgba(0, 0, 0, 0.3); /* Fondo semi-transparente oscuro */
+  transition: transform 0.2s, background 0.2s;
+  backdrop-filter: blur(5px);
 }
 
-.table-glass tbody tr:hover { background: rgba(255,255,255,.08); }
+.table-glass tbody tr:hover {
+  background: rgba(255, 255, 255, 0.1); 
+  transform: scale(1.005);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
 
+/* Celdas */
 .table-glass td {
-  padding: 18px 12px;
-  border-bottom: 1px dashed rgba(255,255,255,.14);
+  padding: 15px 20px;
+  border: none;
+  vertical-align: middle;
 }
+.table-glass tbody tr td:first-child { border-radius: 10px 0 0 10px; }
+.table-glass tbody tr td:last-child { border-radius: 0 10px 10px 0; }
 
 .table-glass img {
-  border-radius: 10px;
-  box-shadow: 0 6px 16px rgba(0,0,0,.35);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  width: 45px; height: 45px; object-fit: cover;
 }
 
-/* =========================
-   Helpers
-   ========================= */
-.text-muted-soft { color: rgba(255,255,255,.70) !important; }
-
-/* --- SELECT legible en el dropdown --- */
-.form-select {
-  color-scheme: light; /* Fuerza popup claro en navegadores WebKit/Blink */
+/* Botones de acción en tabla */
+.btn-action-glass {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+  margin-left: 5px;
+  cursor: pointer;
+}
+.btn-action-glass:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+.btn-action-delete:hover {
+  background: rgba(255, 80, 80, 0.4);
+  color: #fff;
 }
 
-/* Fuerza color/fondo de las opciones (Chromium/Firefox) */
-.form-select option,
-.form-select optgroup {
-  color: #111 !important;
-  background-color: #fff !important;
+/* =========================================
+   6. MODAL OSCURO (Estilo Xiaomi/Tech)
+   ========================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 20px;
 }
 
-/* Hover/selección dentro del popup */
-.form-select option:hover,
-.form-select option:checked {
-  background-color: #eaf1ff !important;
-  color: #000 !important;
+.custom-modal {
+  background: #1a1a1a;
+  width: 100%;
+  max-width: 700px;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
 }
 
-/* Mantén tu estilo “glass” para el control cerrado */
-.form-select,
-.form-control {
-  background: rgba(255,255,255,.08) !important;
-  color: #fff !important;
-  border: 1px solid rgba(255,255,255,.22) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.modal-header {
+  padding: 20px 24px;
+  background: #222;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.close-btn {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: 0.2s;
+}
+.close-btn:hover { background: rgba(255,255,255,0.3); }
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* Inputs Modal */
+.modal-body label {
+  color: #ccc;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.modal-input {
+  width: 100%;
+  background: #2b2b2b;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  transition: 0.2s;
+}
+.modal-input:focus {
+  outline: none;
+  border-color: #666;
+  background: #333;
+}
+
+/* Imágenes Preview */
+.image-preview-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+.img-thumb {
+  width: 70px; height: 70px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #444;
+}
+
+/* Checkbox */
+.custom-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.custom-check input {
+  width: 18px; height: 18px;
+  accent-color: #6d28d9;
 }

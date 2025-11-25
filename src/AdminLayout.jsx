@@ -9,14 +9,16 @@ export default function AdminLayout() {
   return (
     <div className="admin-wrapper">
       <AdminSidebar />
+      
       <main className="admin-content">
         <AnimatePresence mode="wait">
           <motion.div
-            key={location.pathname}        
-            initial={{ opacity: 0, y: 8 }}
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.28, ease: "easeInOut" }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="admin-page-container"
           >
             <Outlet />
           </motion.div>

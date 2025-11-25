@@ -1,4 +1,3 @@
-// src/context/CartContext.jsx
 import {
   createContext,
   useCallback,
@@ -14,34 +13,48 @@ import { useAuth } from "./AuthContext";
 
 const CartContext = createContext(null);
 
-/* ------------------------- helpers ------------------------- */
-function sanitizeQuantity(q) {
-  const n = Number.parseInt(q, 10);
-  return Number.isFinite(n) && n > 0 ? n : 0;
+function sanitizeQuantity(quantity) {
+  const parsed = Number.parseInt(quantity, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return parsed;
 }
 
-function toNumber(v) {
-  const n = Number(v);
+function toNumber(value) {
+  const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
 function pickImagesArray(product) {
-  const raw = (Array.isArray(product?.image_url) && product.image_url) ||
-              (Array.isArray(product?.images) && product.images) || [];
-  const images = raw.map(x => (typeof x === "string" ? x : x?.url || x?.path || x?.src || "")).filter(Boolean);
+  const raw =
+    (Array.isArray(product?.image_url) && product.image_url) ||
+    (Array.isArray(product?.images) && product.images) ||
+    [];
+
+  const images = raw
+    .map((x) =>
+      typeof x === "string" ? x : x?.url || x?.path || x?.src || ""
+    )
+    .filter(Boolean);
+
   const image = product?.image || images[0] || "";
   return { images, image };
 }
 
 function normalizeCartItem(item) {
   if (!item) return null;
+
   const product = item.product ?? {};
   const { images, image } = pickImagesArray(product);
+
   const quantity = sanitizeQuantity(item.quantity ?? 0);
-  const price = toNumber(product.price) || toNumber(product.price_value) ||
-                toNumber(product.priceNumber) || toNumber(item.price);
+  const price =
+    toNumber(product.price) ||
+    toNumber(product.price_value) ||
+    toNumber(product.priceNumber) ||
+    toNumber(item.price);
+
   const productId = item.product_id ?? product.id ?? null;
-  
+
   return {
     id: item.id ?? `${productId ?? "item"}`,
     cartId: item.cart_id ?? null,
@@ -62,34 +75,37 @@ function normalizeCartItem(item) {
 }
 
 function normalizeCart(cart) {
-  console.log("📦 [DEBUG] DATOS RECIBIDOS EN NORMALIZE:", cart);
+  // DEBUG: Mantenemos este log para confirmar que seguimos leyendo bien
+  console.log("📦 [DEBUG] Estructura recibida del Backend:", cart);
 
-  if (!cart) return { cartId: null, userId: null, items: [] };
+  if (!cart) {
+    return { cartId: null, userId: null, items: [] };
+  }
 
-  // AQUÍ AGREGAMOS EL NOMBRE LARGO QUE VIMOS EN TU CONSOLA
-  const rawItems = (Array.isArray(cart.items) && cart.items) || 
-                   (Array.isArray(cart.cart_items) && cart.cart_items) ||
-                   (Array.isArray(cart._cart_item) && cart._cart_item) ||
-                   (Array.isArray(cart._cart_item_of_cart_of_product) && cart._cart_item_of_cart_of_product) || // <--- ¡AQUÍ ESTÁ LA CLAVE!
-                   (Array.isArray(cart.response) && cart.response) || 
-                   [];
-  
-  console.log(`📦 [DEBUG] Items encontrados: ${rawItems.length}`, rawItems);
+  const rawItems =
+    (Array.isArray(cart._cart_item_of_cart_of_product) && cart._cart_item_of_cart_of_product) ||
+    (Array.isArray(cart.items) && cart.items) ||
+    (Array.isArray(cart.cart_items) && cart.cart_items) ||
+    (Array.isArray(cart._cart_items) && cart._cart_items) ||
+    (Array.isArray(cart.items_list) && cart.items_list) ||
+    (Array.isArray(cart) ? cart : []) ||
+    [];
 
-  const items = rawItems.map(ci => normalizeCartItem(ci)).filter(x => x && x.productId);
-  
-  return { 
-    cartId: cart.id ?? null, 
-    userId: cart.user_id ?? null, 
-    items 
+  console.log(`🔍 [DEBUG] Items crudos encontrados: ${rawItems.length}`, rawItems);
+
+  const items = rawItems
+    .map((ci) => normalizeCartItem(ci))
+    .filter((x) => x && x.productId);
+
+  return {
+    cartId: cart.id ?? null,
+    userId: cart.user_id ?? null,
+    items,
   };
 }
 
-/* ========================= Provider ========================= */
 export function CartProvider({ children }) {
   const { status: authStatus } = useAuth();
-  // checking | authenticated | unauthenticated
-
   const [cartId, setCartId] = useState(() => CartApi.getStoredCartId());
   const [userId, setUserId] = useState(null);
   const [items, setItems] = useState([]);
@@ -97,9 +113,9 @@ export function CartProvider({ children }) {
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
 
-  // control de concurrencia
   const bootOnce = useRef(false);
   const lastAuthStatus = useRef(authStatus);
+  const authThrottleRef = useRef(0);
   const inflightRefresh = useRef(null);
   const inflightEnsure = useRef(null);
 
@@ -119,253 +135,313 @@ export function CartProvider({ children }) {
     setItems([]);
   }, []);
 
-  const handleCartError = useCallback((err) => {
-    console.error("⚠️ [CartContext] Error manejado:", err);
-    if (err?.response?.status === 404) resetLocalCart();
-    setError(err);
-  }, [resetLocalCart]);
+  const handleCartError = useCallback(
+    (err) => {
+      console.error("🚨 [ERROR CRÍTICO CARRITO]:", err); // Log visible en consola
+      if (err?.response?.status === 404) {
+        resetLocalCart();
+      }
+      setError(err);
+    },
+    [resetLocalCart]
+  );
 
-  // 401 global => limpiar cart
   useEffect(() => {
-    const unsub = onUnauthorized((code) => {
-      if (code === 401) resetLocalCart();
+    const unsub = onUnauthorized(() => {
+      resetLocalCart();
     });
     return unsub;
   }, [resetLocalCart]);
 
-  /* ---------- wrappers ---------- */
-  const refreshCart = useCallback(async (targetCartId) => {
-    const effective = targetCartId ?? cartId ?? CartApi.getStoredCartId();
-    if (!effective) return null;
-    if (inflightRefresh.current) return inflightRefresh.current;
+  const refreshCart = useCallback(
+    async (targetCartId) => {
+      const effectiveCartId =
+        targetCartId ?? cartId ?? CartApi.getStoredCartId();
 
-    setIsLoading(true);
-    inflightRefresh.current = (async () => {
-      try {
-        console.log("🔄 [DEBUG] refreshCart: Obteniendo carrito ID:", effective);
-        const cart = await CartApi.getCart(effective);
-        console.log("🔄 [DEBUG] refreshCart: Respuesta API:", cart);
-        if (cart) applyCartState(cart);
-        return cart;
-      } catch (err) {
-        if (err?.response?.status !== 429) handleCartError(err);
-        return null;
-      } finally {
-        inflightRefresh.current = null;
-        setIsLoading(false);
-      }
-    })();
-    return inflightRefresh.current;
-  }, [applyCartState, cartId, handleCartError]);
+      if (!effectiveCartId) return null;
+      if (inflightRefresh.current) return inflightRefresh.current;
+
+      setIsLoading(true);
+      inflightRefresh.current = (async () => {
+        try {
+          const cart = await CartApi.getCart(effectiveCartId);
+          if (cart) applyCartState(cart);
+          return cart;
+        } catch (err) {
+          handleCartError(err);
+          throw err;
+        } finally {
+          inflightRefresh.current = null;
+          setIsLoading(false);
+        }
+      })();
+
+      return inflightRefresh.current;
+    },
+    [applyCartState, cartId, handleCartError]
+  );
 
   const ensureCartId = useCallback(async () => {
     if (cartId) return cartId;
     if (inflightEnsure.current) return inflightEnsure.current;
-
+    
     setIsLoading(true);
     inflightEnsure.current = (async () => {
       try {
-        console.log("🛒 [DEBUG] ensureCartId: Solicitando nuevo carrito...");
         const cart = await CartApi.ensureCart();
-        console.log("🛒 [DEBUG] ensureCartId: Recibido:", cart);
         if (cart) {
           applyCartState(cart);
           return cart.id ?? null;
         }
         return null;
       } catch (err) {
-        console.error("🔥 [DEBUG] ensureCartId falló:", err);
-        if (err?.response?.status !== 429) handleCartError(err);
-        return null;
+        handleCartError(err);
+        throw err;
       } finally {
         inflightEnsure.current = null;
         setIsLoading(false);
       }
     })();
+
     return inflightEnsure.current;
   }, [applyCartState, cartId, handleCartError]);
 
-  /* ---------- boot inicial ---------- */
   useEffect(() => {
     if (bootOnce.current) return;
     bootOnce.current = true;
 
+    let cancelled = false;
     (async () => {
-      if (authStatus === "checking") return;
       try {
         const existing = CartApi.getStoredCartId();
         if (existing) {
-          await refreshCart(existing);
-        } else {
-          const id = await ensureCartId();
-          if (id) await refreshCart(id);
+          if (!cancelled) await refreshCart(existing);
+          return;
         }
-      } catch (err) {}
+        const ensuredId = await ensureCartId();
+        if (!cancelled && ensuredId) await refreshCart(ensuredId);
+      } catch (err) {
+        if (!cancelled) console.error("Error inicializando el carrito", err);
+      }
     })();
-  }, [authStatus, ensureCartId, refreshCart]);
 
-  /* ---------- cambios de autenticación ---------- */
+    return () => {
+      cancelled = true;
+    };
+  }, [ensureCartId, refreshCart]);
+
   useEffect(() => {
-    const stable = (s) => s === "authenticated" || s === "unauthenticated";
-    if (!stable(authStatus) || authStatus === lastAuthStatus.current) return;
+    if (
+      authStatus !== "authenticated" &&
+      authStatus !== "unauthenticated"
+    ) {
+      lastAuthStatus.current = authStatus;
+      return;
+    }
 
+    if (authStatus === lastAuthStatus.current) return;
     lastAuthStatus.current = authStatus;
+
+    const now = Date.now();
+    if (now - authThrottleRef.current < 800) return;
+    authThrottleRef.current = now;
 
     (async () => {
       try {
         resetLocalCart();
         const id = await ensureCartId();
         if (id) await refreshCart(id);
-      } catch {}
+      } catch (err) {
+        console.error("Error actualizando carrito al cambiar autenticación", err);
+      }
     })();
   }, [authStatus, ensureCartId, refreshCart, resetLocalCart]);
 
-  /* ---------- acciones ---------- */
-  
-  const addItem = useCallback(async (productOrId, quantity = 1) => {
-    const productId =
-      typeof productOrId === "object" && productOrId !== null
-        ? (productOrId.id ?? productOrId.product_id ?? productOrId.productId)
-        : productOrId;
-    const qty = sanitizeQuantity(quantity);
+  // --- NUEVA VERSIÓN DE ADDITEM CON LOGS DE DEPURACIÓN ---
+  const addItem = useCallback(
+    async (productOrId, quantity = 1) => {
+      // Intentamos extraer el ID numérico
+      const productId =
+        typeof productOrId === "object" && productOrId !== null
+          ? productOrId.id ??
+            productOrId.product_id ??
+            productOrId.productId
+          : productOrId;
 
-    console.log("🛒 [DEBUG] addItem iniciado para ID:", productId, "Cantidad:", qty);
+      const safeQuantity = sanitizeQuantity(quantity);
 
-    if (!productId || qty <= 0) {
-        console.error("❌ [DEBUG] Datos inválidos en addItem");
+      console.log(`🛒 [DEBUG] Iniciando addItem. ID Producto: ${productId}, Cantidad: ${safeQuantity}`);
+      console.log("🛒 [DEBUG] Objeto producto completo recibido:", productOrId);
+
+      if (!productId || safeQuantity <= 0) {
+        console.error("❌ [ERROR] ID de producto inválido o cantidad 0");
         throw new Error("Producto o cantidad inválida");
-    }
-
-    setIsMutating(true);
-    try {
-      let id = cartId;
-      if (!id) {
-          console.log("🛒 [DEBUG] No hay ID local, llamando a ensureCartId...");
-          id = await ensureCartId();
       }
-      
-      if (!id) throw new Error("No fue posible obtener un carrito activo");
 
-      console.log("🛒 [DEBUG] Enviando addItem a API...");
-      await CartApi.addItem({ cart_id: id, product_id: productId, quantity: qty });
-      
-      console.log("🛒 [DEBUG] Refrescando carrito...");
-      await refreshCart(id);
-      console.log("✅ [DEBUG] Carrito actualizado correctamente.");
+      setIsMutating(true);
+      try {
+        let targetCartId = cartId;
+        if (!targetCartId) {
+             console.log("🛒 [DEBUG] No hay ID local, llamando a ensureCartId...");
+             targetCartId = await ensureCartId();
+        }
 
-    } catch (err) {
-      console.error("🔥 [DEBUG] ERROR EN ADDITEM:", err);
-      if (err?.response?.status !== 429) handleCartError(err);
-      throw err;
-    } finally {
-      setIsMutating(false);
-    }
-  }, [cartId, ensureCartId, handleCartError, refreshCart]);
+        if (!targetCartId) throw new Error("No fue posible obtener un carrito activo");
+        
+        console.log(`🛒 [DEBUG] Enviando POST a /cart_item. CartID: ${targetCartId}`);
 
-  const updateQuantity = useCallback(async (cartItemId, quantity) => {
-    const qty = sanitizeQuantity(quantity);
-    if (!cartItemId || qty <= 0) throw new Error("Cantidad inválida");
+        // Llamada a la API guardando la respuesta
+        const response = await CartApi.addItem({
+          cart_id: targetCartId,
+          product_id: productId,
+          quantity: safeQuantity,
+        });
 
-    setIsMutating(true);
-    try {
-      await CartApi.updateQty({ cart_item_id: cartItemId, quantity: qty });
-      await refreshCart();
-    } catch (err) {
-      if (err?.response?.status !== 429) handleCartError(err);
-      throw err;
-    } finally {
-      setIsMutating(false);
-    }
-  }, [handleCartError, refreshCart]);
+        console.log("⚡ [DEBUG] Respuesta del servidor al AGREGAR item:", response);
 
-  const removeItem = useCallback(async (cartItemId) => {
-    if (!cartItemId) return;
-    setIsMutating(true);
-    try {
-      await CartApi.removeItem(cartItemId);
-      await refreshCart();
-    } catch (err) {
-      if (err?.response?.status !== 429) handleCartError(err);
-      throw err;
-    } finally {
-      setIsMutating(false);
-    }
-  }, [handleCartError, refreshCart]);
+        await refreshCart(targetCartId);
+      } catch (err) {
+        console.error("❌ [ERROR] Falló addItem:", err);
+        handleCartError(err);
+        throw err;
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [cartId, ensureCartId, handleCartError, refreshCart]
+  );
+  // -------------------------------------------------------
 
-  const incrementItem = useCallback(async (cartItemId) => {
-    const target = items.find((i) => i.id === cartItemId);
-    if (!target) return;
-    await updateQuantity(cartItemId, target.quantity + 1);
-  }, [items, updateQuantity]);
+  const updateQuantity = useCallback(
+    async (cartItemId, quantity) => {
+      const safeQuantity = sanitizeQuantity(quantity);
+      if (!cartItemId || safeQuantity <= 0)
+        throw new Error("Cantidad inválida");
 
-  const decrementItem = useCallback(async (cartItemId) => {
-    const target = items.find((i) => i.id === cartItemId);
-    if (!target) return;
-    const next = target.quantity - 1;
-    if (next <= 0) await removeItem(cartItemId);
-    else await updateQuantity(cartItemId, next);
-  }, [items, removeItem, updateQuantity]);
+      setIsMutating(true);
+      try {
+        await CartApi.updateQty({ cart_item_id: cartItemId, quantity: safeQuantity });
+        await refreshCart();
+      } catch (err) {
+        handleCartError(err);
+        throw err;
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [handleCartError, refreshCart]
+  );
+
+  const removeItem = useCallback(
+    async (cartItemId) => {
+      if (!cartItemId) return;
+      setIsMutating(true);
+      try {
+        await CartApi.removeItem(cartItemId);
+        await refreshCart();
+      } catch (err) {
+        handleCartError(err);
+        throw err;
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [handleCartError, refreshCart]
+  );
+
+  const incrementItem = useCallback(
+    async (cartItemId) => {
+      const target = items.find((i) => i.id === cartItemId);
+      if (!target) return;
+      await updateQuantity(cartItemId, target.quantity + 1);
+    },
+    [items, updateQuantity]
+  );
+
+  const decrementItem = useCallback(
+    async (cartItemId) => {
+      const target = items.find((i) => i.id === cartItemId);
+      if (!target) return;
+      const next = target.quantity - 1;
+      if (next <= 0) {
+        await removeItem(cartItemId);
+      } else {
+        await updateQuantity(cartItemId, next);
+      }
+    },
+    [items, removeItem, updateQuantity]
+  );
 
   const clearCart = useCallback(async () => {
-    const id = cartId ?? (await ensureCartId());
-    if (!id) return;
+    const ensuredId = cartId ?? (await ensureCartId());
+    if (!ensuredId) return;
     setIsMutating(true);
     try {
-      await CartApi.clearCart(id);
-      await refreshCart(id);
+      await CartApi.clearCart(ensuredId);
+      await refreshCart(ensuredId);
     } catch (err) {
-      if (err?.response?.status !== 429) handleCartError(err);
+      handleCartError(err);
       throw err;
     } finally {
       setIsMutating(false);
     }
   }, [cartId, ensureCartId, handleCartError, refreshCart]);
 
-  /* ---------- totales / value ---------- */
-  const totals = useMemo(() => items.reduce((acc, it) => {
-    acc.totalItems += it.quantity;
-    acc.totalPrice += it.subtotal;
-    return acc;
-  }, { totalItems: 0, totalPrice: 0 }), [items]);
+  const totals = useMemo(
+    () =>
+      items.reduce(
+        (acc, it) => {
+          acc.totalItems += it.quantity;
+          acc.totalPrice += it.subtotal;
+          return acc;
+        },
+        { totalItems: 0, totalPrice: 0 }
+      ),
+    [items]
+  );
 
-  const value = useMemo(() => ({
-    cartId,
-    userId,
-    items,
-    totalItems: totals.totalItems,
-    totalPrice: totals.totalPrice,
-    isLoading,
-    isMutating,
-    error,
-    refreshCart,
-    addItem,
-    updateQuantity,
-    incrementItem,
-    decrementItem,
-    removeItem,
-    clearCart,
-  }), [
-    addItem,
-    cartId,
-    clearCart,
-    decrementItem,
-    error,
-    incrementItem,
-    isLoading,
-    isMutating,
-    items,
-    refreshCart,
-    removeItem,
-    totals.totalItems,
-    totals.totalPrice,
-    updateQuantity,
-    userId
-  ]);
+  const value = useMemo(
+    () => ({
+      cartId,
+      userId,
+      items,
+      totalItems: totals.totalItems,
+      totalPrice: totals.totalPrice,
+      isLoading,
+      isMutating,
+      error,
+      refreshCart,
+      addItem,
+      updateQuantity,
+      incrementItem,
+      decrementItem,
+      removeItem,
+      clearCart,
+    }),
+    [
+      addItem,
+      cartId,
+      clearCart,
+      decrementItem,
+      error,
+      incrementItem,
+      isLoading,
+      isMutating,
+      items,
+      refreshCart,
+      removeItem,
+      totals.totalItems,
+      totals.totalPrice,
+      updateQuantity,
+      userId,
+    ]
+  );
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider value={value}>{children}</CartContext.Provider>
+  );
 }
 
-/* ---------------------- hook ---------------------- */
 export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart must be used within a CartProvider");
