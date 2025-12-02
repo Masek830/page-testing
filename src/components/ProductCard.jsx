@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
-import { useCart } from "../context/CartContext"; // <--- ESTO ES VITAL
+import { useCart } from "../context/CartContext";
 
 export default function ProductCard({ p, onOpen }) {
-  // 1. TRAEMOS LA FUNCIÓN addItem DEL CONTEXTO
   const { addItem, isMutating } = useCart(); 
   
   const [show, setShow] = useState(false);
@@ -11,7 +10,6 @@ export default function ProductCard({ p, onOpen }) {
   const [loadedKey, setLoadedKey] = useState("");
   const [adding, setAdding] = useState(false);
 
-  // Lógica de imágenes
   const images = useMemo(() => {
     const raw = p?.image_url;
     if (!raw) return [];
@@ -43,12 +41,11 @@ export default function ProductCard({ p, onOpen }) {
     if (!Number.isNaN(v)) setQty(Math.min(maxStock, Math.max(1, v)));
   };
 
-  // 2. ESTA ES LA NUEVA FUNCIÓN QUE SÍ GUARDA
   const handleAddToCart = async () => {
     if (!p?.id) return;
     setAdding(true);
     try {
-      console.log("Intentando agregar:", p.name); // Esto te confirmará que es el código nuevo
+      console.log("Intentando agregar:", p.name); 
       await addItem(p, qty); 
       handleClose(); 
       setQty(1);
@@ -61,7 +58,6 @@ export default function ProductCard({ p, onOpen }) {
 
   return (
     <>
-      {/* Card clickeable */}
       <button
         type="button"
         onClick={handleOpen}
@@ -92,7 +88,6 @@ export default function ProductCard({ p, onOpen }) {
         </article>
       </button>
 
-      {/* Modal */}
       {show && (
         <div
           className="modal fade show"
@@ -169,7 +164,6 @@ export default function ProductCard({ p, onOpen }) {
                     </div>
 
                     <div className="d-flex align-items-center gap-2 mt-4">
-                      {/* 3. EL BOTÓN AHORA LLAMA A handleAddToCart */}
                       <button
                         type="button"
                         className="btn btn-primary"

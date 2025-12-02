@@ -34,10 +34,10 @@ export default function Login() {
     setError(null);
     setIsSubmitting(true);
     try {
-      // realiza login con email y password
+      
       await login({ email: form.email.trim(), password: form.password });
 
-      // redirige al destino original o al Home
+      
       const to = location.state?.from?.pathname || "/";
       navigate(to, { replace: true });
     } catch (err) {
@@ -65,9 +65,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor="email">
-              Correo
-            </label>
+            <label className="form-label" htmlFor="email">Correo</label>
             <input
               id="email"
               type="email"
@@ -82,9 +80,7 @@ export default function Login() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="password">
-              Contraseña
-            </label>
+            <label className="form-label" htmlFor="password">Contraseña</label>
             <input
               id="password"
               type="password"
@@ -98,50 +94,17 @@ export default function Login() {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="btn-registro"
-            style={{ width: "100%", marginTop: "1rem" }}
-          >
+          <button type="submit" disabled={isSubmitting} className="btn-registro">
             {isSubmitting ? "Accediendo..." : "Acceder"}
           </button>
         </form>
 
         {error && (
-          <p
-            style={{
-              color: "red",
-              textAlign: "center",
-              marginTop: "1rem",
-              fontWeight: 500,
-            }}
-          >
-            {error}
-          </p>
+          <p style={{ color: "red", textAlign: "center", marginTop: "1rem" }}>{error}</p>
         )}
 
-        <p
-          className="auth-hint"
-          style={{ marginTop: "1rem", textAlign: "center", position: "relative", zIndex: 2 }}
-        >
-          ¿No tienes una cuenta?{" "}
-          <a
-            href="/register"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              navigate("/register", { state: { from: location } });
-            }}
-            style={{
-              color: "#7a00ba",
-              fontWeight: 600,
-              cursor: "pointer",
-              textDecoration: "none",
-            }}
-          >
-            Regístrate aquí
-          </a>
+        <p style={{ marginTop: "1rem", textAlign: "center" }}>
+          ¿No tienes una cuenta? <a href="/register">Regístrate aquí</a>
         </p>
       </div>
     </motion.div>
