@@ -1,404 +1,280 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { formatCurrency } from "../utils/currency"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useCart } from "../context/CartContext"
-import { ProductsApi } from "../api/coreApi"
+import { formatCurrency } from "../utils/currency"
 
-function pickRelated(all, current, n = 4) {
-  const collection = Array.isArray(all) ? all : []
-  const filtered = collection.filter((item) => item && item.id && item.id !== current?.id)
-  const sameCategory = filtered.filter((item) => item.category && item.category === current?.category)
-  const base = sameCategory.length >= n ? sameCategory : filtered
-  return base.sort(() => Math.random() - 0.5).slice(0, n)
+export function pickRelated(all, current, n = 3) {
+  if (!all || !Array.isArray(all) || !current) return []
+  return all
+    .filter((x) => x.id !== current.id && x.category === current.category)
+    .slice(0, n)
 }
 
-function buildGallery(product) {
-  if (!product) return []
-  const images = Array.isArray(product.images)
-    ? product.images.filter(Boolean)
-    : product.image
-      ? [product.image]
-      : []
-  const gallery = product.image ? [product.image, ...images] : images
-  return gallery.filter(Boolean).filter((image, index, array) => array.indexOf(image) === index)
-}
-
-export default function ProductQuickView({ product, onClose, allProducts = [] }) {
-  const modalRef = useRef(null)
-  const addFeedbackTimeoutRef = useRef(null)
-  const { addItem } = useCart()
-
-  const [activeProduct, setActiveProduct] = useState(product ?? null)
-  const [selectedImage, setSelectedImage] = useState(product?.image ?? "")
+export default function ProductQuickView({ open, onClose, product, allProducts = [] }) {
+  const [selectedProduct, setSelectedProduct] = useState(product || null)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
-  const [isAdding, setIsAdding] = useState(false)
-  const [isWorking, setIsWorking] = useState(false)
-  const [relatedProducts, setRelatedProducts] = useState([])
-  const [isRelatedLoading, setIsRelatedLoading] = useState(false)
+  const [loadedKey, setLoadedKey] = useState("")
+  const [manualActive, setManualActive] = useState(false)
+  const [isAdded, setIsAdded] = useState(false)
 
-  const supportsBootstrap = typeof window !== "undefined" && Boolean(window.bootstrap)
+  const { addItem, isMutating } = useCart()
 
-  const clearFeedbackTimeout = useCallback(() => {
-    if (addFeedbackTimeoutRef.current) {
-      clearTimeout(addFeedbackTimeoutRef.current)
-      addFeedbackTimeoutRef.current = null
+  useEffect(() => {
+    if (open) {
+      setSelectedProduct(product)
+      setActiveImageIndex(0)
+      setQuantity(1)
+      setLoadedKey("")
+      setIsAdded(false)
     }
+  }, [product, open])
+
+  useEffect(() => {
+    if (open && !manualActive) {
+      setManualActive(true)
+    } else if (!open && manualActive) {
+      setManualActive(false)
+    }
+  }, [open, manualActive])
+
+  const images = useMemo(() => {
+    const p = selectedProduct
+    if (!p) return []
+    const raw = p.images || p.image_url || p.image
+    
+    let list = []
+
+    if (Array.isArray(raw)) {
+       list = raw.map((it) => (typeof it === "string" ? it : it?.url || it?.path || it?.src || ""))
+    } else if (typeof raw === "string") {
+       list = [raw]
+    }
+
+    if (list.length === 0 && (p.image || p.image_url)) {
+        list = [p.image || p.image_url]
+    }
+    
+    return list.filter(Boolean)
+  }, [selectedProduct])
+
+  const cover = images[activeImageIndex] || images[0] || ""
+
+  const relatedProducts = useMemo(
+    () => (selectedProduct ? pickRelated(allProducts, selectedProduct, 3) : []),
+    [allProducts, selectedProduct]
+  )
+
+  const maxStock =
+    typeof selectedProduct?.stock_quantity === "number" && selectedProduct.stock_quantity > 0
+      ? selectedProduct.stock_quantity
+      : 99
+
+  const handleClose = useCallback(() => {
+    setManualActive(false)
+    setTimeout(() => {
+        setActiveImageIndex(0) 
+    }, 200)
+    if (onClose) onClose()
+  }, [onClose])
+
+  const handleSelectRelated = useCallback((related) => {
+    setSelectedProduct(related)
+    setActiveImageIndex(0)
+    setQuantity(1)
+    setLoadedKey("")
+    setIsAdded(false)
   }, [])
 
-  const resetView = useCallback(() => {
-    setQuantity(1)
-    setSelectedImage("")
-    setIsAdding(false)
-    setIsWorking(false)
-    clearFeedbackTimeout()
-  }, [clearFeedbackTimeout])
-
-  const closeAndNotify = useCallback(() => {
-    setActiveProduct(null)
-    resetView()
-    onClose?.()
-  }, [onClose, resetView])
-
-  useEffect(() => {
-    setActiveProduct(product ?? null)
-  }, [product])
-
-  useEffect(() => {
-    if (!modalRef.current || !supportsBootstrap) {
-      return undefined
-    }
-
-    const modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalRef.current, {
-      backdrop: true
-    })
-
-    const handleHidden = () => {
-      closeAndNotify()
-    }
-
-    modalRef.current.addEventListener("hidden.bs.modal", handleHidden)
-
-    if (product) {
-      modalInstance.show()
-    } else {
-      modalInstance.hide()
-    }
-
-    return () => {
-      modalRef.current?.removeEventListener("hidden.bs.modal", handleHidden)
-      modalInstance.hide()
-    }
-  }, [product, supportsBootstrap, closeAndNotify])
-
-  useEffect(() => () => clearFeedbackTimeout(), [clearFeedbackTimeout])
-
-  useEffect(() => {
-    if (!activeProduct) {
-      resetView()
-      return
-    }
-
-    const images = buildGallery(activeProduct)
-
-    resetView()
-    setSelectedImage(images[0] ?? "")
-  }, [activeProduct, resetView])
-
-  const manualActive = Boolean(activeProduct) && !supportsBootstrap
-
-  useEffect(() => {
-    if (!manualActive || typeof document === "undefined") return undefined
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        closeAndNotify()
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown)
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [manualActive, closeAndNotify])
-
-  useEffect(() => {
-    if (typeof document === "undefined") return undefined
-    const { body } = document
-    if (manualActive) {
-      const previousOverflow = body.style.overflow
-      body.classList.add("modal-open")
-      body.style.overflow = "hidden"
-      return () => {
-        body.classList.remove("modal-open")
-        body.style.overflow = previousOverflow
-      }
-    }
-
-    body.classList.remove("modal-open")
-    body.style.overflow = ""
-    return undefined
-  }, [manualActive])
-
-  const galleryImages = useMemo(() => buildGallery(activeProduct), [activeProduct])
-
-  useEffect(() => {
-    if (!activeProduct?.id) {
-      setRelatedProducts([])
-      return
-    }
-
-    let cancelled = false
-    setIsRelatedLoading(true)
-
-    ProductsApi.relatedOf(activeProduct.id, 4)
-      .then((related) => {
-        if (cancelled) return
-        const candidates = Array.isArray(related) && related.length ? related : pickRelated(allProducts, activeProduct)
-        setRelatedProducts(candidates)
-      })
-      .catch((error) => {
-        if (cancelled) return
-        console.error("Error obteniendo productos relacionados", error)
-        setRelatedProducts(pickRelated(allProducts, activeProduct))
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsRelatedLoading(false)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [activeProduct, allProducts])
-
-  const handleDecrease = () => {
-    setQuantity((prev) => Math.max(1, prev - 1))
-  }
-
-  const handleIncrease = () => {
-    setQuantity((prev) => prev + 1)
-  }
-
-  const handleAddToCart = async () => {
-    if (!activeProduct) return
-
-    setIsWorking(true)
+  const decrementQty = () => setQuantity((n) => Math.max(1, n - 1))
+  const incrementQty = () => setQuantity((n) => Math.min(maxStock, n + 1))
+  
+  const handleAddToCart = useCallback(async () => {
+    if (!selectedProduct) return
     try {
-      await addItem(activeProduct, quantity)
-      setIsAdding(true)
-
-      if (typeof window !== "undefined" && window.bootstrap) {
-        const offcanvasElement = document.getElementById("cartOffcanvas")
-        if (offcanvasElement) {
-          const offcanvasInstance =
-            window.bootstrap.Offcanvas.getInstance(offcanvasElement) ||
-            new window.bootstrap.Offcanvas(offcanvasElement)
-          offcanvasInstance?.show()
-        }
-      }
-
-      clearFeedbackTimeout()
-
-      addFeedbackTimeoutRef.current = setTimeout(() => {
-        if (supportsBootstrap && modalRef.current && typeof window !== "undefined" && window.bootstrap) {
-          const modalInstance = window.bootstrap.Modal.getInstance(modalRef.current)
-          modalInstance?.hide()
-        } else {
-          closeAndNotify()
-        }
-      }, 900)
+      await addItem(selectedProduct, quantity)
+      setIsAdded(true)
+      setTimeout(() => setIsAdded(false), 2000)
     } catch (error) {
-      console.error("No se pudo añadir al carrito", error)
-      setIsAdding(false)
-    } finally {
-      setIsWorking(false)
+      console.error(error)
     }
-  }
+  }, [selectedProduct, quantity, addItem])
 
-  const handleSelectRelated = (related) => {
-    if (!related) return
-    setActiveProduct(related)
-  }
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape" && manualActive) handleClose()
+    }
+    document.addEventListener("keydown", handleEsc)
+    return () => document.removeEventListener("keydown", handleEsc)
+  }, [manualActive, handleClose])
 
-  const handleBackdropClick = useCallback(
-    (event) => {
-      if (!supportsBootstrap && event.target === event.currentTarget) {
-        closeAndNotify()
-      }
-    },
-    [supportsBootstrap, closeAndNotify]
-  )
-
-  const handleDialogClick = useCallback(
-    (event) => {
-      if (!supportsBootstrap) {
-        event.stopPropagation()
-      }
-    },
-    [supportsBootstrap]
-  )
-
-  const shouldShow = Boolean(activeProduct)
-  const modalClasses = `modal fade${manualActive ? " show manual-open" : ""}`
-  const modalStyle = manualActive ? { display: "block" } : undefined
+  if (!manualActive) return null
 
   return (
     <>
       <div
-        className={modalClasses}
-        id="productQuickView"
-        tabIndex="-1"
-        aria-hidden={!shouldShow}
-        aria-labelledby="productQuickViewLabel"
-        ref={modalRef}
-        style={modalStyle}
-        onClick={manualActive ? handleBackdropClick : undefined}
+        className="modal fade show"
+        style={{ display: "block", zIndex: 1055 }}
+        onClick={handleClose}
+        role="dialog"
+        aria-modal="true"
       >
         <div
-          className="modal-dialog modal-xl modal-dialog-centered"
-          onClick={manualActive ? handleDialogClick : undefined}
+          className="modal-dialog modal-lg modal-dialog-centered"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div className="modal-content product-quick-view">
-            <div className="modal-header border-0 pb-0">
+          <div className="modal-content product-hero-modal border-0 bg-transparent">
+            
+            <div className="modal-header d-flex flex-column align-items-start pb-0 border-0">
               <button
                 type="button"
-                className="btn-close"
-                data-bs-dismiss={supportsBootstrap ? "modal" : undefined}
+                className="btn-close position-absolute top-0 end-0 m-3 z-3"
+                onClick={handleClose}
                 aria-label="Cerrar"
-                onClick={supportsBootstrap ? undefined : closeAndNotify}
-              ></button>
+              />
+              
+              <nav aria-label="breadcrumb" className="w-100 mt-2">
+                <ol className="breadcrumb m-0 glass-breadcrumbs">
+                  <li className="breadcrumb-item">
+                    <span className="text-muted">Inicio</span>
+                  </li>
+                  <li className="breadcrumb-item">
+                    <span className="text-muted">{selectedProduct?.category || 'Catálogo'}</span>
+                  </li>
+                  <li className="breadcrumb-item active text-truncate" style={{ maxWidth: '200px' }}>
+                    {selectedProduct?.name}
+                  </li>
+                </ol>
+              </nav>
             </div>
-            {activeProduct ? (
-              <div className="modal-body pt-0">
-                <section className="product-hero-modal">
-                  <div className="container-fluid">
-                    <div className="row g-4 align-items-start">
-                      <div className="col-lg-6">
-                        <div className="product-image-container mb-3">
-                          <img
-                            src={selectedImage || activeProduct.image}
-                            alt={activeProduct.name}
-                            className="img-fluid"
-                          />
-                        </div>
-                        {galleryImages.length > 1 ? (
-                          <div className="thumbnail-gallery flex-wrap">
-                            {galleryImages.map((imageSrc, index) => (
-                              <button
-                                key={imageSrc}
-                                type="button"
-                                className={`thumbnail-item ${selectedImage === imageSrc ? "active" : ""}`}
-                                onClick={() => setSelectedImage(imageSrc)}
-                                aria-label={`${activeProduct.name} miniatura ${index + 1}`}
-                              >
-                                <img src={imageSrc} alt={`${activeProduct.name} miniatura ${index + 1}`} />
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="col-lg-6">
-                        <div className="product-info">
-                          <div className="product-category">{activeProduct.category}</div>
-                          <h1 className="product-title" id="productQuickViewLabel">
-                            {activeProduct.name}
-                          </h1>
-                          <div className="product-price">{formatCurrency(activeProduct.price)}</div>
-                          <p className="product-description">{activeProduct.description}</p>
 
-                          <div className="quantity-wrapper mt-4">
-                            <span className="quantity-label d-block mb-2">Cantidad</span>
-                            <div className="input-group quantity-selector">
-                              <button className="btn btn-outline-secondary" type="button" onClick={handleDecrease}>
-                                -
-                              </button>
-                              <input
-                                type="text"
-                                className="form-control text-center"
-                                value={quantity}
-                                readOnly
-                                aria-label="Cantidad"
-                              />
-                              <button className="btn btn-outline-secondary" type="button" onClick={handleIncrease}>
-                                +
-                              </button>
-                            </div>
-                          </div>
+            {selectedProduct ? (
+              <div className="modal-body pt-3">
+                <div className="row align-items-start">
+                  
+                  <div className="col-md-6 mb-4 mb-md-0">
+                    <div className="product-image-container">
+                      <img 
+                        src={cover} 
+                        alt={selectedProduct.name} 
+                        className={`img-fluid ${loadedKey === cover ? "is-loaded" : ""}`}
+                        onLoad={() => setLoadedKey(cover)}
+                        style={{ maxHeight: '350px', objectFit: 'contain' }}
+                      />
+                    </div>
 
+                    {images.length > 1 && (
+                      <div className="thumbnails-container">
+                        {images.map((img, i) => (
                           <button
-                            className={`add-to-cart-btn mt-3 ${isAdding ? "is-added" : ""}`}
+                            key={i}
                             type="button"
-                            onClick={handleAddToCart}
-                            disabled={isWorking}
+                            className={`thumb-btn-fix ${i === activeImageIndex ? 'active' : ''}`}
+                            onClick={() => setActiveImageIndex(i)}
+                            aria-label={`Ver imagen ${i + 1}`}
                           >
-                            {isAdding ? (
-                              <>
-                                <i className="fas fa-check" aria-hidden="true"></i>
-                                <span className="ms-2">Añadido</span>
-                              </>
-                            ) : isWorking ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                <span className="ms-2">Añadiendo...</span>
-                              </>
-                            ) : (
-                              <>
-                                <i className="fas fa-shopping-cart" aria-hidden="true"></i>
-                                <span className="ms-2">Añadir al carrito</span>
-                              </>
-                            )}
+                            <img src={img} alt={`Miniatura ${i + 1}`} />
                           </button>
-                        </div>
+                        ))}
                       </div>
+                    )}
+                  </div>
+
+                  <div className="col-md-6">
+                    <span className="product-category">
+                      {selectedProduct.category || "General"}
+                    </span>
+                    
+                    <h2 className="product-title">{selectedProduct.name}</h2>
+
+                    <div className="product-price">
+                      {formatCurrency(selectedProduct.price)}
+                      {selectedProduct.stock_quantity > 0 && (
+                        <span className="stock-badge ms-2">
+                          <i className="bi bi-box-seam me-1"></i>
+                          {selectedProduct.stock_quantity}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-muted mb-4" style={{ lineHeight: '1.6' }}>
+                      {selectedProduct.description || "Sin descripción disponible."}
+                    </p>
+
+                    <div className="control-group">
+                      <div className="quantity-selector-pill">
+                        <button 
+                          className="quantity-btn" 
+                          onClick={decrementQty}
+                          disabled={quantity <= 1}
+                        >
+                          -
+                        </button>
+                        <input 
+                          className="quantity-input" 
+                          value={quantity} 
+                          readOnly 
+                        />
+                        <button 
+                          className="quantity-btn" 
+                          onClick={incrementQty}
+                          disabled={quantity >= maxStock}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <button 
+                        className={`add-to-cart-btn ${isAdded ? 'is-added' : ''}`}
+                        onClick={handleAddToCart}
+                        disabled={isMutating || quantity < 1 || quantity > maxStock}
+                      >
+                        <i className={`bi ${isAdded ? 'bi-check-lg' : 'bi-bag-plus-fill'}`}></i>
+                        {isMutating ? "..." : (isAdded ? "¡Listo!" : "Añadir")}
+                      </button>
                     </div>
                   </div>
-                </section>
+                </div>
 
-                {relatedProducts.length ? (
-                  <div className="related-products-modal">
-                    <h3>Productos relacionados</h3>
-                    {isRelatedLoading ? (
-                      <div className="text-muted mb-3">Buscando recomendaciones...</div>
-                    ) : null}
+                {relatedProducts.length > 0 && (
+                  <div className="related-products-section mt-5">
+                    <h5 className="section-title mb-3">
+                      <i className="bi bi-stars me-2 text-primary"></i>
+                      También te podría gustar
+                    </h5>
+                    
                     <div className="row g-3">
-                      {relatedProducts.map((related) => (
-                        <div key={related.id} className="col-12 col-sm-6 col-lg-3">
-                          <button
-                            type="button"
-                            className="related-card w-100 h-100"
-                            onClick={() => handleSelectRelated(related)}
+                      {relatedProducts.map((rel) => (
+                        <div key={rel.id} className="col-4">
+                          <div 
+                            className="related-card h-100" 
+                            onClick={() => handleSelectRelated(rel)}
                           >
-                            <div className="related-card-image">
-                              <img
-                                src={related.image ?? (Array.isArray(related.images) ? related.images[0] : "")}
-                                alt={related.name}
-                                className="img-fluid"
+                            <div className="related-img-wrapper">
+                              <img 
+                                src={rel.image || (rel.images && rel.images[0]) || ""} 
+                                alt={rel.name} 
                               />
                             </div>
-                            <div className="related-card-body">
-                              <h6 className="mb-1">{related.name}</h6>
-                              {typeof related.price !== "undefined" ? (
-                                <span className="price">{formatCurrency(related.price)}</span>
-                              ) : null}
+                            <div className="related-info">
+                              <h6 className="text-truncate">{rel.name}</h6>
+                              <span className="price">{formatCurrency(rel.price)}</span>
                             </div>
-                          </button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
-                ) : null}
+                )}
               </div>
             ) : (
               <div className="modal-body py-5 text-center text-muted">
-                Selecciona un producto para ver los detalles.
+                Cargando detalles...
               </div>
             )}
           </div>
         </div>
       </div>
-      {manualActive ? <div className="modal-backdrop fade show manual-open-backdrop"></div> : null}
+      {manualActive && <div className="modal-backdrop fade show" style={{ zIndex: 1050 }}></div>}
     </>
   )
 }
-
-export { pickRelated }

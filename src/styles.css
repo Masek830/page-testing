@@ -1087,3 +1087,417 @@ body.admin-body {
   .text__cover h1 { font-size: 2rem; }
   .btn__search { padding: 8px 20px; }
 }
+
+/* =========================================================
+= 15) REDISEÑO PÁGINA PRODUCTOS (Estilo Limpio & Vibrante)
+========================================================= */
+
+/* 1. El Contenedor Principal y el efecto de luz de fondo */
+.products-page-container {
+  background-color: #ffffff; /* Fondo blanco puro para igualar el resto del sitio */
+  position: relative;
+  overflow: hidden; /* Para contener el efecto de luz */
+}
+
+/* El "Glow" morado/rosa detrás del título (Inspirado en Imagen 1) */
+.page-header-glow {
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(208, 92, 227, 0.25) 0%, rgba(154, 0, 191, 0.05) 50%, transparent 70%);
+  filter: blur(80px);
+  z-index: 0; /* Detrás del contenido */
+  pointer-events: none;
+}
+
+.products-header-content {
+  position: relative;
+  z-index: 1; /* Asegura que el texto esté sobre el glow */
+}
+
+/* 2. Nueva Barra de Filtros "Flotante" (Estilo Tarjeta Limpia, como Imagen 2) */
+.clean-filter-bar {
+  background: #ffffff;
+  /* Sombra suave y difusa similar a tus otras tarjetas */
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08); 
+  border-radius: 50px; /* Completamente redondeada */
+  padding: 1rem 1.5rem;
+  margin-bottom: 3rem;
+  border: 1px solid #f5f5f5; /* Borde casi invisible */
+}
+
+/* Cuando se pega arriba al hacer scroll */
+.clean-filter-bar.sticky-top {
+  /* Aumentamos un poco la sombra cuando está "pegado" para que resalte */
+  box-shadow: 0 15px 35px -15px rgba(154, 0, 191, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* 3. Tipografía y Detalles (Igual que antes) */
+.eyebrow-text {
+  color: var(--main_color-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.display-title-m3 {
+  /* Usamos tu fuente Bold y color oscuro */
+  font-family: 'Google Sans', sans-serif;
+  font-weight: 700; 
+  color: var(--color_text-secundary);
+  font-size: 3rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* 4. Inputs Pill Redondeados (Ajustados para fondo blanco) */
+.input-m3-pill {
+  border-radius: 50px !important;
+  border: 1px solid #eee; /* Borde muy sutil */
+  background-color: #f9f9f9; /* Un gris muy claro para diferenciar del fondo blanco */
+  padding: 0.7rem 1.2rem;
+  font-size: 0.95rem;
+  color: var(--color_text-secundary);
+  transition: var(--transition-medium);
+  box-shadow: none;
+}
+
+.input-m3-pill:focus {
+  border-color: var(--main_color-primary);
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(154, 0, 191, 0.1);
+}
+
+/* Selects específicos (para que el icono no quede pegado) */
+select.input-m3-pill {
+  padding-right: 2.5rem;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%239a00bf' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* El botón de limpiar búsqueda (X) */
+.btn-clear-search {
+    border: none;
+    background: transparent;
+    color: #999;
+    transition: color 0.2s;
+}
+.btn-clear-search:hover { color: var(--main_color-primary); 
+
+}
+
+/* =========================================================
+= 16) EXTRAS MODAL: Breadcrumbs & Related
+========================================================= */
+
+/* A. Breadcrumbs (Migas de Pan) Glass */
+.glass-breadcrumbs {
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  background: rgba(154, 0, 191, 0.05); /* Fondo morado muy suave */
+  border-radius: 50px; /* Píldora completa */
+  display: inline-flex;
+}
+
+.glass-breadcrumbs .breadcrumb-item a {
+  color: var(--color_text-tertiary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.glass-breadcrumbs .breadcrumb-item a:hover {
+  color: var(--main_color-primary);
+}
+
+.glass-breadcrumbs .breadcrumb-item.active {
+  color: var(--main_color-primary);
+  font-weight: 700;
+}
+
+/* El separador (/) */
+.breadcrumb-item + .breadcrumb-item::before {
+  color: #ccc;
+}
+
+
+/* B. Sección Productos Relacionados */
+.related-products-section {
+  border-top: 1px solid rgba(0,0,0,0.05);
+  padding-top: 1.5rem;
+}
+
+.section-title {
+  font-family: 'Google Sans', sans-serif;
+  font-weight: 700;
+  color: var(--color_text-secundary);
+  font-size: 1.1rem;
+}
+
+/* Tarjeta Miniatura Relacionada */
+.related-card {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 16px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  height: 100%;
+}
+
+.related-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(154, 0, 191, 0.15); /* Glow morado al hover */
+  border-color: rgba(154, 0, 191, 0.2);
+}
+
+.related-img-wrapper {
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  padding: 10px;
+  height: 80px; /* Altura fija para uniformidad */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.related-img-wrapper img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply; /* Truco para que el fondo blanco de JPGs se fusione mejor */
+}
+
+.related-info h6 {
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+  color: var(--color_text-secundary);
+  font-weight: 600;
+}
+
+.related-info .price {
+  font-size: 0.8rem;
+  color: var(--main_color-primary);
+  font-weight: 700;
+}
+
+.news-grid {
+  align-items: stretch;
+}
+
+.news-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 18px 18px 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06))
+      border-box,
+    rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 18px 60px rgba(10, 6, 30, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 180ms ease-out,
+    box-shadow 180ms ease-out,
+    border-color 160ms ease-out,
+    background 200ms ease-out;
+  overflow: hidden;
+  color: var(--color_text-secundary, #101e2c);
+}
+
+.news-card__halo {
+  position: absolute;
+  inset: -40%;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 120, 220, 0.8), transparent 55%),
+    radial-gradient(circle at 100% 0%, rgba(151, 71, 255, 0.85), transparent 55%),
+    radial-gradient(circle at 50% 100%, rgba(255, 180, 110, 0.9), transparent 60%);
+  opacity: 0.65;
+  filter: blur(40px);
+  z-index: -1;
+  transform: translate3d(0, 0, 0);
+}
+
+.news-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow:
+    0 22px 70px rgba(10, 6, 30, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.16) inset;
+  border-color: rgba(255, 255, 255, 0.75);
+}
+
+.news-card__thumb-wrapper {
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.news-card__thumb {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.02);
+  transition: transform 220ms ease-out;
+}
+
+.news-card:hover .news-card__thumb {
+  transform: scale(1.06);
+}
+
+.news-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.news-card__date {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(16, 30, 44, 0.7);
+}
+
+.news-card__title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color_text-secundary, #101e2c);
+}
+
+.news-card__excerpt {
+  font-size: 0.9rem;
+  color: var(--color_text-tertiary, #485663);
+}
+
+/* Modal */
+
+.news-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 0 0, rgba(154, 0, 191, 0.38), transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(255, 130, 180, 0.32), transparent 55%),
+    rgba(7, 2, 8, 0.78);
+  backdrop-filter: blur(26px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1300;
+}
+
+.news-modal {
+  position: relative;
+  max-width: 780px;
+  width: 100%;
+  border-radius: 28px;
+  padding: 22px 22px 26px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(26px);
+  box-shadow:
+    0 26px 90px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.news-modal__halo {
+  position: absolute;
+  inset: -50%;
+  background:
+    conic-gradient(
+      from 140deg,
+      rgba(255, 160, 220, 0.9),
+      rgba(151, 71, 255, 0.85),
+      rgba(255, 200, 130, 0.9),
+      rgba(255, 160, 220, 0.9)
+    );
+  opacity: 0.55;
+  filter: blur(60px);
+  z-index: -1;
+}
+
+.news-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.news-modal__title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: #ffffff;
+}
+
+.news-modal__thumb-wrapper {
+  border-radius: 22px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.news-modal__thumb {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  display: block;
+}
+
+.news-modal__body {
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.news-modal__close {
+  border: none;
+  background: rgba(255, 255, 255, 0.7);
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition:
+    background 150ms ease-out,
+    transform 150ms ease-out;
+}
+
+.news-modal__close:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 576px) {
+  .news-card {
+    padding: 16px 14px 18px;
+  }
+
+  .news-modal {
+    padding: 18px 16px 22px;
+  }
+
+  .news-modal__title {
+    font-size: 1.35rem;
+  }
+}

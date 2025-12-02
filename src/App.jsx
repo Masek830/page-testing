@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import ProductosPage from "./pages/ProductosPage";
 import Register from "./pages/Register";
 import Users from "./pages/Users";
+import NoticiasPage from "./pages/NoticiasPage";
 
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminLayout from "./AdminLayout";
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/productos" element={<ProductosPage />} />
           <Route path="/productos/:categoria" element={<ProductosPage />} />
+          <Route path="/noticias" element={<NoticiasPage />} />
         </Route>
 
         <Route element={<AdminProtectedRoute />}>

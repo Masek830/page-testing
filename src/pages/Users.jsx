@@ -1,54 +1,32 @@
-// src/pages/Users.jsx
 import { useEffect, useState, useMemo } from "react";
 import { fetchUsers, deleteUser, toggleActive, updateRole, updateUser } from "../api/usersApi";
+import EditUserModal from "../components/EditUserModal";
 
 const norm = (v) => String(v || "").trim().toLowerCase();
 
 export default function Users() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
   
-  // Filtros
   const [q, setQ] = useState("");
   const [role, setRole] = useState("todos");   
   const [active, setActive] = useState("todos");
-  const [workingId, setWorkingId] = useState(null);
 
-  // --- CARGA DE DATOS ---
+  const [editingUser, setEditingUser] = useState(null);
+
   async function load() {
     setLoading(true); 
-    setErr("");
-    console.log("🔄 Iniciando carga de usuarios..."); // LOG 1
-
     try {
       const response = await fetchUsers();
-      console.log("📦 RESPUESTA DEL BACKEND:", response); // LOG 2: Mira esto en la consola (F12)
-
-      // LÓGICA INTELIGENTE PARA ENCONTRAR EL ARRAY
+      
       let dataArray = [];
-
-      if (Array.isArray(response)) {
-        // Caso 1: La API devuelve directamente la lista [ ... ]
-        dataArray = response;
-      } else if (response && Array.isArray(response.items)) {
-        // Caso 2: Devuelve { items: [ ... ] } (Paginación estándar)
-        dataArray = response.items;
-      } else if (response && Array.isArray(response.result)) {
-        // Caso 3: Devuelve { result: [ ... ] } (Xano a veces hace esto)
-        dataArray = response.result;
-      } else if (response && Array.isArray(response.data)) {
-         // Caso 4: Axios a veces anida data dentro de data
-        dataArray = response.data;
-      } else {
-        console.warn("⚠️ No encontré un array de usuarios en la respuesta.");
-      }
-
+      if (Array.isArray(response)) dataArray = response;
+      else if (response?.items) dataArray = response.items;
+      else if (response?.result) dataArray = response.result;
+      
       setItems(dataArray);
-
     } catch (e) {
-      console.error("❌ Error cargando usuarios:", e);
-      setErr("Error al cargar usuarios. Revisa la consola.");
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -56,85 +34,56 @@ export default function Users() {
 
   useEffect(() => { load(); }, []);
 
-  // --- FILTROS ---
   const visible = useMemo(() => {
     let list = items;
-
     if (q) {
       const s = norm(q);
-      list = list.filter(u => 
-        norm(u.name).includes(s) || norm(u.email).includes(s)
-      );
+      list = list.filter(u => norm(u.name).includes(s) || norm(u.email).includes(s));
     }
-    if (role !== "todos") {
-      list = list.filter(u => norm(u.role).includes(norm(role)));
-    }
+    if (role !== "todos") list = list.filter(u => norm(u.user_type) === norm(role));
     if (active !== "todos") {
       const wantActive = active === "activos";
-      list = list.filter(u => !!u.active === wantActive);
+      list = list.filter(u => (u.status === 'activo') === wantActive);
     }
-    // Ordenar: nuevos primero (usando ID o created_at)
     return list.sort((a, b) => (b.id || 0) - (a.id || 0));
   }, [items, q, role, active]);
 
-  // --- ACCIONES ---
   async function onToggleActive(u) {
-    if(!window.confirm(`¿${u.active ? "Desactivar" : "Activar"} a ${u.name}?`)) return;
-    setWorkingId(u.id);
+    if(!window.confirm(`¿Cambiar estado de ${u.name}?`)) return;
     try {
-      await toggleActive(u.id, u.active);
-      setItems(prev => prev.map(x => x.id === u.id ? { ...x, active: !x.active } : x));
+      const newStatus = u.status === 'activo' ? 'suspendido' : 'activo';
+      await toggleActive(u.id, u.status);
+      setItems(prev => prev.map(x => x.id === u.id ? { ...x, status: newStatus } : x));
     } catch (error) { alert("Error al cambiar estado"); } 
-    finally { setWorkingId(null); }
   }
 
   async function onChangeRole(u) {
-    const newRole = u.role === "admin" ? "cliente" : "admin";
+    const newRole = u.user_type === "admin" ? "cliente" : "admin";
     if(!window.confirm(`¿Cambiar rol de ${u.name} a ${newRole}?`)) return;
-    setWorkingId(u.id);
     try {
-      await updateRole(u.id, newRole);
-      setItems(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole } : x));
+      await updateRole(u.id, u.user_type);
+      setItems(prev => prev.map(x => x.id === u.id ? { ...x, user_type: newRole } : x));
     } catch (error) { alert("Error al cambiar rol"); } 
-    finally { setWorkingId(null); }
   }
 
-  async function onDelete(u) {
-    if (!window.confirm(`¿Eliminar a ${u.name}?`)) return;
-    setWorkingId(u.id);
+  const handleDelete = async (id) => {
+    if (!window.confirm("¿Estás seguro de eliminar este usuario permanentemente?")) return;
     try {
-      await deleteUser(u.id);
-      setItems(prev => prev.filter(x => x.id !== u.id));
-    } catch (error) { alert("Error al eliminar usuario"); } 
-    finally { setWorkingId(null); }
-  }
-
-  async function onQuickEdit(u) {
-    const name = window.prompt("Editar Nombre:", u.name || "");
-    if (name === null) return;
-    const email = window.prompt("Editar Email:", u.email || "");
-    if (email === null) return;
-
-    setWorkingId(u.id);
-    try {
-      await updateUser(u.id, { name, email });
-      setItems(prev => prev.map(x => x.id === u.id ? { ...x, name, email } : x));
-    } catch (error) { alert("Error al actualizar"); } 
-    finally { setWorkingId(null); }
-  }
+      await deleteUser(id);
+      setItems(prev => prev.filter(x => x.id !== id));
+    } catch (error) { alert("Error al eliminar"); }
+  };
 
   return (
     <div className="fade-in">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="text-white mb-0">Gestión de Usuarios</h2>
+        <h2 className="text-white mb-0 fw-bold">Gestión de Usuarios</h2>
         <button className="btn btn-glass" onClick={load} disabled={loading}>
-          <i className={`fas fa-sync-alt me-2 ${loading ? "fa-spin" : ""}`}></i>
-          Refrescar
+          {loading ? "Cargando..." : "Refrescar"}
         </button>
       </div>
 
-      {/* FILTROS GLASS */}
-      <div className="glass mb-4">
+      <div className="glass mb-4 p-3">
         <div className="row g-3">
           <div className="col-md-5">
             <input
@@ -145,88 +94,105 @@ export default function Users() {
           <div className="col-md-3">
             <select className="form-select" value={role} onChange={e => setRole(e.target.value)}>
               <option value="todos">Rol: Todos</option>
-              <option value="admin">Administradores</option>
-              <option value="cliente">Clientes</option>
+              <option value="admin">Administrador</option>
+              <option value="cliente">Cliente</option>
             </select>
           </div>
-          <div className="col-md-3">
+          <div className="col-md-2">
             <select className="form-select" value={active} onChange={e => setActive(e.target.value)}>
               <option value="todos">Estado: Todos</option>
-              <option value="activos">Solo Activos</option>
-              <option value="inactivos">Solo Inactivos</option>
+              <option value="activos">Activos</option>
+              <option value="inactivos">Suspendidos</option>
             </select>
+          </div>
+          <div className="col-md-2">
+             <button className="btn btn-glass w-100" onClick={() => {setQ(""); setRole("todos"); setActive("todos")}}>
+               Limpiar
+             </button>
           </div>
         </div>
       </div>
 
-      {err && <div className="alert alert-danger glass border-danger text-danger mb-4">{err}</div>}
+      <div className="table-responsive" style={{ overflowX: "auto" }}>
+        <table className="table-glass">
+          <thead>
+            <tr>
+              <th style={{width: '80px'}}>Avatar</th>
+              <th>Usuario</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th className="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visible.length === 0 && !loading && (
+              <tr><td colSpan="6" className="text-center py-5 text-muted">No se encontraron usuarios.</td></tr>
+            )}
+            
+            {visible.map(u => (
+              <tr key={u.id}>
+                <td>
+                  <div 
+                    className="d-flex align-items-center justify-content-center fw-bold text-white"
+                    style={{ 
+                      width: 45, height: 45, 
+                      borderRadius: "50%", 
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      fontSize: "1.1rem",
+                      textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+                      border: "1px solid rgba(255,255,255,0.2)"
+                    }}
+                  >
+                    {(u.name?.[0] || u.email?.[0] || "?").toUpperCase()}
+                  </div>
+                </td>
+                
+                <td className="fw-bold">{u.name || "Sin nombre"}</td>
+                <td className="text-white-50">{u.email}</td>
 
-      {/* TABLA GLASS */}
-      <div className="glass p-0 overflow-hidden">
-        <div className="table-responsive">
-          <table className="table-glass">
-            <thead>
-              <tr>
-                <th>Avatar</th>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th className="text-end">Acciones</th>
+                <td>
+                  <span className={`badge ${u.user_type === 'admin' ? 'bg-primary' : 'bg-secondary'} bg-opacity-75`} style={{fontSize: '0.8rem', padding: '6px 10px'}}>
+                    {u.user_type || "cliente"}
+                  </span>
+                </td>
+
+                <td>
+                   <span className={`badge ${u.status === 'activo' ? 'bg-success' : 'bg-danger'} bg-opacity-75`} style={{fontSize: '0.8rem', padding: '6px 10px'}}>
+                    {u.status || "suspendido"}
+                  </span>
+                </td>
+
+                <td className="text-end">
+                  <button 
+                    className="btn-action-glass" 
+                    onClick={() => setEditingUser(u)}
+                    title="Editar usuario"
+                  >
+                    <i className="fas fa-pen" style={{ fontSize: '0.8rem' }}></i>
+                  </button>
+
+                  <button 
+                    className="btn-action-glass btn-action-delete"
+                    onClick={() => handleDelete(u.id)}
+                    title="Eliminar usuario"
+                  >
+                    <i className="fas fa-trash" style={{ fontSize: '0.8rem' }}></i>
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {visible.length === 0 && !loading && (
-                <tr>
-                  <td colSpan="5" className="text-center py-5 text-muted">
-                    No se encontraron usuarios o la lista está vacía.
-                  </td>
-                </tr>
-              )}
-              
-              {visible.map(u => (
-                <tr key={u.id}>
-                  <td style={{ width: "80px" }}>
-                    <div className="d-flex align-items-center justify-content-center bg-dark rounded-circle text-white fw-bold"
-                      style={{ width: 40, height: 40, fontSize: "1.2rem", background: "rgba(255,255,255,0.1)" }}>
-                      {(u.name?.[0] || u.email?.[0] || "?").toUpperCase()}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="fw-bold text-white">{u.name || "Sin nombre"}</div>
-                    <div className="small text-white-50">{u.email}</div>
-                  </td>
-                  <td>
-                    <span className={`badge ${String(u.role).includes('admin') ? 'bg-primary' : 'bg-secondary'} bg-opacity-75`}>
-                      {u.role || "cliente"}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge ${u.active ? 'bg-success' : 'bg-danger'} bg-opacity-75`}>
-                      {u.active ? "Activo" : "Suspendido"}
-                    </span>
-                  </td>
-                  <td className="text-end">
-                    <div className="btn-group">
-                      <button className="btn btn-sm btn-glass" onClick={() => onQuickEdit(u)} disabled={workingId === u.id}>
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button className="btn btn-sm btn-glass text-warning" onClick={() => onChangeRole(u)} disabled={workingId === u.id}>
-                        <i className="fas fa-user-shield"></i>
-                      </button>
-                      <button className={`btn btn-sm btn-glass ${u.active ? 'text-danger' : 'text-success'}`} onClick={() => onToggleActive(u)} disabled={workingId === u.id}>
-                        <i className={`fas ${u.active ? "fa-ban" : "fa-check"}`}></i>
-                      </button>
-                      <button className="btn btn-sm btn-outline-danger" onClick={() => onDelete(u)} disabled={workingId === u.id}>
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
+
+      {editingUser && (
+        <EditUserModal 
+          user={editingUser} 
+          onClose={() => setEditingUser(null)} 
+          onSuccess={load} 
+        />
+      )}
     </div>
   );
 }

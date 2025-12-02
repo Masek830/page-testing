@@ -1,4 +1,3 @@
-// src/pages/Home.jsx
 import { motion } from "framer-motion";
 
 import Hero from "../components/Hero";
@@ -39,14 +38,14 @@ export default function Home() {
         <About />
       </section>
 
-      {/* Favoritos del home: 6 productos + botón para ver catálogo */}
+      
       <section id="productos">
         <Products
           limit={6}
           showCTA={true}
-          // params={{ is_featured: true }}
+          
           title="Nuestros favoritos"
-          subtitle="Curamos colecciones limitadas de accesorios premium para dispositivos móviles, gamers y creadores. Haz clic en cualquiera para descubrir más detalles."
+          subtitle="Colecciones limitadas de accesorios premium para dispositivos móviles, gamers y creadores. Haz clic en cualquiera para descubrir más detalles."
         />
       </section>
 

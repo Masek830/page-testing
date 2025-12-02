@@ -1,25 +1,27 @@
-/* =========================================
-   1. GLOBAL Y LAYOUT PRINCIPAL
-   ========================================= */
 body {
   font-family: "Google Sans", "Poppins", sans-serif;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Evita doble scroll en la ventana */
+  
 }
+
 
 .admin-wrapper {
   display: flex;
+  position: fixed; 
+  top: 0;
+  left: 0;
   width: 100vw;
-  height: 100vh; /* Ocupa toda la pantalla */
-  overflow: hidden;
+  height: 100vh;
+  overflow: hidden; 
   
-  /* Tu fondo original */
+  
   background-image: url('/TheHub/images/bg/bga.png'); 
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  background-color: #1a1a2e; /* Color de respaldo */
+  background-color: #1a1a2e;
+  z-index: 1;
 }
 
 /* =========================================
@@ -32,14 +34,14 @@ body {
   display: flex;
   flex-direction: column;
   
-  /* Degradado Azul a Morado Oscuro */
+  
   background: linear-gradient(160deg, #1e3a8a 0%, #2e1065 100%);
   
   color: #fff;
   box-shadow: 4px 0 25px rgba(0, 0, 0, 0.3);
   z-index: 50;
   
-  /* Borde redondeado solo a la derecha */
+  
   border-top-right-radius: 24px;
   border-bottom-right-radius: 24px;
 }
@@ -55,11 +57,11 @@ body {
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
 }
 
-/* Navegación */
+
 .admin-sidebar nav {
   flex-grow: 1;
   padding: 1rem 1.2rem;
-  overflow-y: auto; /* Scroll interno si la pantalla es muy bajita */
+  overflow-y: auto;
 }
 
 .admin-sidebar .nav-item {
@@ -67,7 +69,7 @@ body {
   margin-bottom: 8px;
 }
 
-/* Enlaces (Estado Inactivo) */
+
 .admin-sidebar .nav-link {
   display: flex;
   align-items: center;
@@ -76,7 +78,7 @@ body {
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   font-weight: 500;
-  border-radius: 16px; /* Bordes muy redondeados */
+  border-radius: 16px;
   transition: all 0.25s ease;
   border: none;
   background: transparent;
@@ -88,10 +90,10 @@ body {
   transform: translateX(4px);
 }
 
-/* Enlaces (Estado ACTIVO - Tarjeta Blanca) */
+
 .admin-sidebar .nav-link.active {
   background-color: #ffffff;
-  color: #2e1065; /* Texto morado/azul fuerte */
+  color: #2e1065;
   font-weight: 700;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
@@ -103,13 +105,13 @@ body {
   font-size: 1.1rem;
 }
 
-/* Botón Salir */
+
 .logout-btn {
   width: 100%;
   display: flex;
   align-items: center;
   padding: 14px 20px;
-  color: #ff8585; /* Rojo pastel */
+  color: #ff8585;
   background: transparent;
   border: none;
   font-weight: 600;
@@ -124,18 +126,18 @@ body {
 }
 
 /* =========================================
-   3. CONTENIDO PRINCIPAL (Scroll Independiente)
+   3. CONTENIDO PRINCIPAL
    ========================================= */
 .admin-content {
   flex-grow: 1;
   height: 100%;
-  overflow-y: auto; /* IMPORTANTE: El scroll solo ocurre aquí */
+  overflow-y: auto; 
   overflow-x: hidden;
   padding: 0;
   position: relative;
 }
 
-/* Helpers para animación y contenedores */
+
 .fade-in {
   animation: fadeIn 0.4s ease-out forwards;
   max-width: 1400px;
@@ -154,12 +156,12 @@ body {
 }
 
 /* =========================================
-   4. GLASS KIT (Inputs, Selects, Paneles)
+   4. GLASS KIT (Paneles, Inputs, Botones)
    ========================================= */
 
-/* Panel Glass (Contenedor de filtros) */
+
 .glass {
-  background: rgba(30, 30, 30, 0.4); /* Semi-transparente */
+  background: rgba(30, 30, 30, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -168,34 +170,57 @@ body {
   color: #fff;
 }
 
-/* --- INPUTS Y SELECTS --- */
-.form-control,
-.form-select {
+
+.admin-content .form-control,
+.admin-content .form-select,
+.admin-content input[type="text"],
+.admin-content input[type="search"] {
   background: rgba(255, 255, 255, 0.08) !important;
   color: #fff !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 12px !important;
+  
+  
+  height: 48px !important; 
+  padding: 0 16px !important; 
+  display: flex;
+  align-items: center;
+
   backdrop-filter: blur(10px);
-  padding: 10px 16px;
-  transition: 0.2s;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  box-shadow: none !important;
 }
 
-.form-control:focus, 
-.form-select:focus {
+.admin-content .form-control:focus, 
+.admin-content .form-select:focus,
+.admin-content input:focus {
   background: rgba(255, 255, 255, 0.15) !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
-  color: #fff !important;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1) !important;
+  outline: none;
 }
 
-.form-control::placeholder {
+.admin-content .form-control::placeholder,
+.admin-content input::placeholder {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* Corrección para las opciones del Select (fondo oscuro) */
-.form-select option {
+
+.admin-content .form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-position: right 1rem center !important;
+  background-size: 16px 12px !important;
+  background-repeat: no-repeat !important;
+  padding-right: 2.5rem !important;
+}
+
+.admin-content .form-select option {
   background-color: #222 !important;
   color: #fff !important;
+  padding: 10px;
 }
 
 /* --- BOTONES --- */
@@ -206,9 +231,13 @@ body {
   color: white;
   backdrop-filter: blur(5px);
   border-radius: 12px;
-  padding: 8px 16px;
+  padding: 0 16px;
   font-weight: 500;
   transition: all 0.2s ease;
+  height: 48px; 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-glass:hover {
@@ -234,21 +263,18 @@ body {
 /* =========================================
    5. TABLAS GLASS (Estilo Flotante)
    ========================================= */
-
 .table-responsive {
   border-radius: 16px;
-  /* overflow: hidden; Quitamos esto para que el scroll se vea bien */
 }
 
 .table-glass {
   width: 100%;
   border-collapse: separate; 
-  border-spacing: 0 8px; /* Espacio entre filas */
+  border-spacing: 0 8px;
   color: #fff;
   margin-top: -10px;
 }
 
-/* Encabezados */
 .table-glass thead th {
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.8);
@@ -262,9 +288,8 @@ body {
 .table-glass thead th:first-child { border-radius: 10px 0 0 10px; }
 .table-glass thead th:last-child { border-radius: 0 10px 10px 0; }
 
-/* Filas (Transparencia corregida) */
 .table-glass tbody tr {
-  background: rgba(0, 0, 0, 0.3); /* Fondo semi-transparente oscuro */
+  background: rgba(0, 0, 0, 0.3); 
   transition: transform 0.2s, background 0.2s;
   backdrop-filter: blur(5px);
 }
@@ -275,7 +300,6 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
-/* Celdas */
 .table-glass td {
   padding: 15px 20px;
   border: none;
@@ -290,7 +314,6 @@ body {
   width: 45px; height: 45px; object-fit: cover;
 }
 
-/* Botones de acción en tabla */
 .btn-action-glass {
   background: rgba(255, 255, 255, 0.1);
   border: none;
@@ -375,7 +398,6 @@ body {
   overflow-y: auto;
 }
 
-/* Inputs Modal */
 .modal-body label {
   color: #ccc;
   font-size: 0.85rem;
@@ -399,7 +421,6 @@ body {
   background: #333;
 }
 
-/* Imágenes Preview */
 .image-preview-container {
   display: flex;
   gap: 10px;
@@ -413,7 +434,6 @@ body {
   border: 2px solid #444;
 }
 
-/* Checkbox */
 .custom-check {
   display: flex;
   align-items: center;

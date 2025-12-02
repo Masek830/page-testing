@@ -1,4 +1,3 @@
-// src/admin/EditProductModal.jsx
 import { useEffect, useState } from "react";
 import { updateProductWithImages } from "../api/ProductsApi";
 
@@ -17,7 +16,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Cargar datos del producto cuando se abre el modal
   useEffect(() => {
     if (product) {
       setForm({
@@ -77,7 +75,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
 
   return (
     <>
-      {/* Backdrop con blur */}
       <div
         className="modal-backdrop-glass"
         onClick={onClose}
@@ -97,7 +94,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
           padding: "20px",
         }}
       >
-        {/* Modal container */}
         <div
           className="content-panel"
           onClick={(e) => e.stopPropagation()}
@@ -109,7 +105,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
             position: "relative",
           }}
         >
-          {/* Header */}
           <div
             style={{
               display: "flex",
@@ -169,7 +164,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
             )}
 
             <div style={{ display: "grid", gap: "1.5rem" }}>
-              {/* Nombre y Marca */}
               <div
                 style={{
                   display: "grid",
@@ -223,7 +217,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
                 </div>
               </div>
 
-              {/* Descripción */}
               <div>
                 <label
                   className="form-label"
@@ -247,7 +240,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
                 />
               </div>
 
-              {/* Precio, Stock y Categoría */}
               <div
                 style={{
                   display: "grid",
@@ -336,7 +328,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
                 </div>
               </div>
 
-              {/* Imágenes actuales */}
               {product.image_url && product.image_url.length > 0 && (
                 <div>
                   <label
@@ -371,7 +362,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
                 </div>
               )}
 
-              {/* Subir nuevas imágenes */}
               <div>
                 <label
                   className="form-label"
@@ -433,7 +423,6 @@ export default function EditProductModal({ product, onClose, onSuccess }) {
               </div>
             </div>
 
-            {/* Footer con botones */}
             <div
               style={{
                 display: "flex",

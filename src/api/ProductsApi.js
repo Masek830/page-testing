@@ -1,12 +1,8 @@
-// src/api/ProductsApi.js
-import { httpCore } from "./http"; // tu cliente con baseURL "/xano-core"
+import { httpCore } from "./http";
 
 const ENDPOINT = "/product";
 const UPLOAD_ENDPOINT = "/upload/image";
 
-/* ============================
- * Helpers de normalización
- * ============================ */
 const norm = (v) => String(v ?? "").trim();
 const normLower = (v) => norm(v).toLowerCase();
 
@@ -38,9 +34,6 @@ function normalizeProduct(p) {
   };
 }
 
-/* ============================
- * Listado
- * ============================ */
 export async function fetchProducts(params = {}) {
   try {
     const query = {};
@@ -48,7 +41,6 @@ export async function fetchProducts(params = {}) {
     if (params.page != null) query.page = params.page;
     if (params.sort) query.sort = params.sort;
 
-    // categoría: si viene "Todas" no la mandamos
     const cat = params.category ?? params.categoria;
     if (cat && normLower(cat) !== "todas") query.category = normLower(cat);
 
@@ -82,9 +74,6 @@ export async function fetchProducts(params = {}) {
   }
 }
 
-/* ============================
- * Detalle
- * ============================ */
 export async function fetchProductById(id) {
   try {
     const res = await httpCore.get(`${ENDPOINT}/${id}`);
@@ -95,9 +84,6 @@ export async function fetchProductById(id) {
   }
 }
 
-/* ============================
- * Crear (sin imágenes)
- * ============================ */
 export async function createProduct(payload) {
   const body = {
     name: norm(payload.name),
@@ -106,10 +92,9 @@ export async function createProduct(payload) {
     stock_quantity: Number(payload.stock_quantity ?? payload.stock ?? 0),
     category: normLower(payload.category || ""),
     brand: norm(payload.brand || ""),
-    image_url: [], // se llenará luego con PATCH
+    image_url: [],
   };
 
-  // limpia vacíos/undefined
   Object.keys(body).forEach((k) => {
     if (body[k] === undefined || body[k] === "") delete body[k];
   });
@@ -123,10 +108,6 @@ export async function createProduct(payload) {
   }
 }
 
-/* ============================
- * Subir imágenes (multipart)
- *  - sin headers manuales para evitar preflight
- * ============================ */
 export async function uploadImages(files) {
   if (!files || !files.length) return [];
   const fd = new FormData();
@@ -140,9 +121,6 @@ export async function uploadImages(files) {
   }
 }
 
-/* ============================
- * Vincular imágenes al producto
- * ============================ */
 export async function patchProductImages(productId, uploadedArray) {
   try {
     const res = await httpCore.patch(`${ENDPOINT}/${productId}`, {
@@ -155,9 +133,6 @@ export async function patchProductImages(productId, uploadedArray) {
   }
 }
 
-/* ============================
- * Crear + subir imágenes (helper)
- * ============================ */
 export async function createProductWithImages(payload, files) {
   const created = await createProduct(payload);
   const id = created?.id;
@@ -171,15 +146,11 @@ export async function createProductWithImages(payload, files) {
   return { created, uploadedImages: uploaded, updated };
 }
 
-/* ============================
- * Actualizar producto
- * ============================ */
 export async function updateProduct(productId, payload) {
   if (!productId) throw new Error("Falta productId");
   
   const body = {};
   
-  // Solo incluir campos que se enviaron
   if (payload.name !== undefined) body.name = norm(payload.name);
   if (payload.description !== undefined) body.description = norm(payload.description);
   if (payload.price !== undefined) body.price = Number(payload.price) || 0;
@@ -199,25 +170,18 @@ export async function updateProduct(productId, payload) {
   }
 }
 
-/* ============================
- * Actualizar + subir nuevas imágenes
- * ============================ */
 export async function updateProductWithImages(productId, payload, files) {
-  // 1. Actualizar datos básicos
   const updated = await updateProduct(productId, payload);
   
-  // 2. Si hay archivos nuevos, subirlos
   if (files && files.length > 0) {
     const uploaded = await uploadImages(files);
     
-    // 3. Combinar con imágenes existentes (si quieres mantenerlas)
     const existingImages = payload.keepExistingImages 
       ? (updated.image_url || [])
       : [];
     
     const allImages = [...existingImages, ...uploaded];
     
-    // 4. Actualizar las imágenes
     const final = await patchProductImages(productId, allImages);
     return final;
   }
@@ -225,14 +189,11 @@ export async function updateProductWithImages(productId, payload, files) {
   return updated;
 }
 
-/* ============================
- * Borrar producto
- * ============================ */
 export async function deleteProduct(productId) {
   if (!productId) throw new Error("Falta productId");
   try {
     const { data } = await httpCore.delete(`${ENDPOINT}/${productId}`);
-    return data; // Xano puede devolver el registro eliminado o {success:true}
+    return data;
   } catch (error) {
     console.error("[ProductsApi] deleteProduct error:", error);
     throw error;
