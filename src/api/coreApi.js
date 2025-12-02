@@ -1,5 +1,8 @@
-// src/api/coreApi.js
+
 import { httpCore } from "./http";
+
+
+const XANO_ORDER_ENDPOINT = "/order"; 
 
 const CART_KEY = import.meta.env.VITE_CART_KEY ?? "THEHUB_CART_ID";
 
@@ -50,8 +53,13 @@ async function getCart(cartId = getStoredCartId()) {
   const finalId = cartId ?? getStoredCartId();
   if (!finalId) return null;
 
+  
   const { data } = await httpCore.get("/cart_item", {
-    params: { cart_id: finalId },
+    params: { 
+        cart_id: finalId,
+        
+        add_related_data: "product", 
+    },
   });
 
   const items = Array.isArray(data)
@@ -105,11 +113,37 @@ async function clearCart(cartId = getStoredCartId()) {
   const cart = await getCart(effective);
   if (!cart?.items?.length) return;
 
+  
   await Promise.all(
     cart.items.map((item) =>
       item?.id ? removeItem(item.id) : Promise.resolve()
     )
   );
+}
+
+async function createOrder() {
+  const cartId = getStoredCartId();
+  if (!cartId) throw new Error("No hay carrito activo para crear la orden.");
+
+  
+  const payload = {
+      cart_id: cartId,
+      
+  };
+
+  try {
+    
+    const { data } = await httpCore.post(XANO_ORDER_ENDPOINT, payload);
+    
+    
+    clearStoredCartId();
+    
+    return data; 
+  } catch (error) {
+    console.error("Fallo al crear la orden:", error);
+    
+    throw new Error("No se pudo completar la transacción. Intenta de nuevo.");
+  }
 }
 
 async function listProducts(params = {}) {
@@ -148,6 +182,7 @@ export const CartApi = {
   updateQty,
   removeItem,
   clearCart,
+  createOrder, 
   getStoredCartId,
   setStoredCartId,
   clearStoredCartId,

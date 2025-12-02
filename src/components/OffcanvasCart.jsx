@@ -21,7 +21,10 @@ export default function OffcanvasCart() {
     [items]
   );
 
-  const handleGoToCart = useCallback(() => {
+  /**
+   * Cierra el Offcanvas usando la instancia de Bootstrap (asumido).
+   */
+  const closeOffcanvas = useCallback(() => {
     if (typeof window !== "undefined" && window.bootstrap) {
       const offcanvasElement = document.getElementById("cartOffcanvas");
       const instance =
@@ -30,10 +33,21 @@ export default function OffcanvasCart() {
           new window.bootstrap.Offcanvas(offcanvasElement));
       instance?.hide();
     }
-    navigate("/cart");
-  }, [navigate]);
+  }, []);
 
-  const handleCheckout = () => {};
+  const handleGoToCart = useCallback(() => {
+    closeOffcanvas();
+    navigate("/cart");
+  }, [navigate, closeOffcanvas]);
+
+  /**
+   * 🛒 Nuevo: Redirige al proceso de pago.
+   * Cierra el offcanvas antes de navegar.
+   */
+  const handleCheckout = () => {
+    closeOffcanvas();
+    navigate("/checkout/payment");
+  };
 
   const handleIncrement = useCallback(
     (item) => {
@@ -181,10 +195,11 @@ export default function OffcanvasCart() {
             >
               Ir al carro
             </button>
+            {/* 🎯 Se conecta al nuevo manejador handleCheckout */}
             <button
               className="btn__text"
               type="button"
-              onClick={handleCheckout}
+              onClick={handleCheckout} 
               disabled={!items.length || busy}
             >
               Iniciar pago
